@@ -923,44 +923,90 @@ Bây giờ, hãy đọc phần Đề cương + Đáp án tôi dán bên dưới 
       el('progressBar').style.width = '100%';
     }
 
-    function renderWrongList(){
+function renderWrongList(){
       const list = state.resultDetail || [];
       if (!list.length){
         wrongPanel.innerHTML = `<div class="wrong-item"><div class="title">Không có câu nào sai</div><div class="meta">Làm rất tốt.</div></div>`;
       } else {
         wrongPanel.innerHTML = list.map((entry, idx) => {
           const q = entry.q;
+          let contextHtml = '';
           let expectedText = '';
           let userText = '';
           
           if (q.mode === 'abcd'){
-             // Lấy ra nội dung của đáp án đúng (từ mảng options gốc)
-             const correctText = q.item[1][q.item[2]];
-             expectedText = 'Đáp án đúng: ' + correctText;
+             // Hiển thị lại các đáp án trắc nghiệm đã được đảo
+             contextHtml = '<div style="margin: 10px 0; padding-left: 12px; border-left: 2px solid var(--line); color: var(--muted);">';
+             let userLetter = '-';
+             let correctLetter = '-';
              
-             // Lấy ra nội dung của đáp án user chọn
-             let userSelectedText = '-';
+             (q.displayOptions || []).forEach((opt, i) => {
+                const letter = String.fromCharCode(65 + i); // A, B, C, D
+                contextHtml += `<div style="margin-bottom:4px"><b>${letter}.</b> ${escapeHtml(opt.text)}</div>`;
+                
+                // Xác định chữ cái của đáp án đúng
+                if (String(opt.idx) === String(q.item[2])) {
+                    correctLetter = letter;
+                }
+                // Xác định chữ cái của đáp án user đã chọn
+                if (entry.user && String(entry.user.selected) === String(opt.idx)) {
+                    userLetter = letter;
+                }
+             });
+             contextHtml += '</div>';
+
+             const correctText = q.item[1][q.item[2]];
+             expectedText = `Đáp án đúng: <b>${correctLetter}</b> (${escapeHtml(correctText)})`;
+             
              if(entry.user && entry.user.selected !== undefined) {
-                userSelectedText = q.item[1][entry.user.selected];
+                const userSelectedText = q.item[1][entry.user.selected];
+                userText = `Bạn chọn: <b>${userLetter}</b> (${escapeHtml(userSelectedText)})`;
+             } else {
+                userText = `Bạn chọn: <b>Bỏ trống</b>`;
              }
-             userText = 'Bạn chọn: ' + userSelectedText;
+
           } else if (q.mode === 'ds'){
-            expectedText = 'Đáp án đúng theo thứ tự đã đảo: ' + entry.expected;
-            userText = 'Bạn chọn: ' + (entry.user?.value ?? '-');
+            // Hiển thị lại các ý đúng sai đã được đảo
+            contextHtml = '<div style="margin: 10px 0; padding-left: 12px; border-left: 2px solid var(--line); color: var(--muted);">';
+            
+            const expectedArr = (entry.expected || '').split('');
+            const userArr = (entry.user?.value || '').split('');
+            
+            let expectedFmt = [];
+            let userFmt = [];
+
+            (q.displayOrder || []).forEach((origIdx, i) => {
+               const letter = String.fromCharCode(97 + i); // a, b, c, d
+               contextHtml += `<div style="margin-bottom:4px"><b>${letter}.</b> ${escapeHtml(q.item[1][origIdx])}</div>`;
+               
+               const expChar = expectedArr[i] === 'd' ? 'Đúng' : 'Sai';
+               expectedFmt.push(`<b>${letter}</b>: ${expChar}`);
+               
+               const usrChar = userArr[i] === 'd' ? 'Đúng' : (userArr[i] === 's' ? 'Sai' : '-');
+               userFmt.push(`<b>${letter}</b>: ${usrChar}`);
+            });
+            contextHtml += '</div>';
+
+            expectedText = 'Đáp án đúng: ' + expectedFmt.join(' | ');
+            userText = 'Bạn chọn: ' + userFmt.join(' | ');
+
           } else {
-            expectedText = 'Đáp án đúng: ' + q.item[1];
-            userText = 'Bạn nhập: ' + (entry.user?.value ?? '-');
+            // Trả lời ngắn thì giữ nguyên do không có xáo trộn
+            expectedText = 'Đáp án đúng: <b>' + escapeHtml(q.item[1]) + '</b>';
+            userText = 'Bạn nhập: <b>' + escapeHtml(entry.user?.value ?? 'Bỏ trống') + '</b>';
           }
+
           return `
             <div class="wrong-item">
               <p class="title">Câu sai ${idx + 1}: ${escapeHtml(q.item[0])}</p>
-              <div class="meta">${escapeHtml(userText)}</div>
-              <div class="meta" style="color:var(--accent-2)">${escapeHtml(expectedText)}</div>
+              ${contextHtml}
+              <div class="meta">${userText}</div>
+              <div class="meta" style="color:var(--accent-2); margin-top: 4px;">${expectedText}</div>
             </div>
           `;
         }).join('');
       }
-      wrongPanel.classList.toggle('hidden');
+      wrongPanel.classList.remove('hidden');
     }
 
     function updateStats(){
