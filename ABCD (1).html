@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ABCD Web Quiz</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:rgba(255,255,255,.08);
+      --panel-2:rgba(255,255,255,.12);
+      --text:#eef2ff;
+      --muted:rgba(238,242,255,.72);
+      --line:rgba(255,255,255,.14);
+      --accent:#7c3aed;
+      --accent-2:#22c55e;
+      --danger:#ef4444;
+      --shadow:0 20px 60px rgba(0,0,0,.35);
+      --radius:22px;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(124,58,237,.35), transparent 35%),
+        radial-gradient(circle at top right, rgba(34,197,94,.22), transparent 30%),
+        linear-gradient(180deg, #0a0f1d, #0f172a 55%, #08111f);
+    }
+
+    .wrap{
+      width:min(1120px, calc(100% - 24px));
+      margin:0 auto;
+      padding:24px 0 36px;
+    }
+
+    .hero{
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+      margin-bottom:18px;
+    }
+
+    .card{
+      background:linear-gradient(180deg, var(--panel), rgba(255,255,255,.05));
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .hero-main{
+      padding:26px;
+      position:relative;
+      overflow:hidden;
+    }
+
+    .hero-main::after{
+      content:"";
+      position:absolute;
+      inset:auto -90px -90px auto;
+      width:220px;height:220px;
+      background:radial-gradient(circle, rgba(124,58,237,.28), transparent 68%);
+      pointer-events:none;
+    }
+
+    .eyebrow{
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      padding:8px 12px;
+      border-radius:999px;
+      background:rgba(255,255,255,.08);
+      border:1px solid var(--line);
+      color:var(--muted);
+      font-size:13px;
+      margin-bottom:14px;
+    }
+
+    h1{
+      margin:0 0 10px;
+      font-size:clamp(28px, 5vw, 42px);
+      line-height:1.05;
+      letter-spacing:-.04em;
+    }
+
+    .desc{
+      margin:0;
+      color:var(--muted);
+      max-width:70ch;
+      line-height:1.6;
+      font-size:15px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 360px 1fr;
+      gap:18px;
+      align-items:start;
+    }
+
+    .panel{
+      padding:18px;
+    }
+
+    .section-title{
+      margin:0 0 12px;
+      font-size:15px;
+      font-weight:700;
+      letter-spacing:.02em;
+      color:#fff;
+    }
+
+    .upload{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    .dropzone{
+      border:1.5px dashed rgba(255,255,255,.22);
+      border-radius:20px;
+      padding:18px;
+      text-align:center;
+      background:rgba(255,255,255,.04);
+      transition:.2s ease;
+    }
+
+    .dropzone.dragover{
+      border-color:rgba(124,58,237,.9);
+      background:rgba(124,58,237,.12);
+      transform:translateY(-1px);
+    }
+
+    .dropzone .big{
+      font-size:15px;
+      margin:0 0 6px;
+      font-weight:700;
+    }
+
+    .dropzone .small{
+      margin:0;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.5;
+    }
+
+    input[type="file"]{
+      width:100%;
+      padding:12px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.05);
+      color:var(--text);
+    }
+
+    .btnrow{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    button{
+      border:none;
+      border-radius:14px;
+      padding:11px 14px;
+      font-weight:700;
+      cursor:pointer;
+      color:white;
+      background:rgba(255,255,255,.1);
+      border:1px solid rgba(255,255,255,.12);
+      transition:.2s ease;
+    }
+    button:hover{transform:translateY(-1px); background:rgba(255,255,255,.14)}
+    .primary{background:linear-gradient(135deg, var(--accent), #4f46e5)}
+    .success{background:linear-gradient(135deg, #16a34a, #22c55e)}
+    .danger{background:linear-gradient(135deg, #dc2626, #ef4444)}
+    .ghost{background:rgba(255,255,255,.05)}
+
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(3, 1fr);
+      gap:10px;
+      margin-top:14px;
+    }
+    .stat{
+      padding:12px;
+      border-radius:16px;
+      background:rgba(255,255,255,.05);
+      border:1px solid var(--line);
+    }
+    .stat .k{font-size:12px;color:var(--muted)}
+    .stat .v{font-size:20px;font-weight:800;margin-top:4px}
+
+    .main{
+      padding:18px;
+      min-height:560px;
+    }
+
+    .hidden{display:none !important}
+
+    .progress{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:center;
+      margin-bottom:14px;
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    .bar{
+      width:100%;
+      height:10px;
+      border-radius:999px;
+      overflow:hidden;
+      background:rgba(255,255,255,.08);
+      border:1px solid var(--line);
+      margin:10px 0 18px;
+    }
+    .bar > div{
+      height:100%;
+      width:0%;
+      border-radius:999px;
+      background:linear-gradient(90deg, var(--accent), #22c55e);
+      transition:width .25s ease;
+    }
+
+    .question-card{
+      padding:18px;
+      border-radius:20px;
+      background:rgba(255,255,255,.05);
+      border:1px solid var(--line);
+    }
+
+    .mode{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:7px 10px;
+      border-radius:999px;
+      background:rgba(124,58,237,.15);
+      border:1px solid rgba(124,58,237,.28);
+      color:#ddd6fe;
+      font-size:12px;
+      margin-bottom:12px;
+    }
+
+    .question{
+      font-size:18px;
+      line-height:1.5;
+      font-weight:700;
+      margin:0 0 18px;
+    }
+
+    .options{
+      display:grid;
+      gap:10px;
+    }
+
+    .option{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      padding:14px;
+      border-radius:16px;
+      background:rgba(255,255,255,.05);
+      border:1px solid var(--line);
+      cursor:pointer;
+      transition:.18s ease;
+    }
+
+    .option:hover{background:rgba(255,255,255,.08)}
+    .option input{margin-top:3px}
+    .option span{line-height:1.45}
+
+    .ds-row{
+      display:grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap:12px;
+      align-items:center;
+      padding:14px;
+      border-radius:16px;
+      background:rgba(255,255,255,.05);
+      border:1px solid var(--line);
+    }
+
+    .ds-statement{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+    }
+
+    .ds-label{
+      min-width:24px;
+      font-weight:800;
+    }
+
+    .ds-choices{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    .ds-choice{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:10px 12px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.05);
+      cursor:pointer;
+      user-select:none;
+      transition:.18s ease;
+    }
+
+    .ds-choice:hover{
+      background:rgba(255,255,255,.08);
+    }
+
+    .ds-choice input{
+      margin:0;
+    }
+
+    .text-answer{
+      width:100%;
+      padding:14px 16px;
+      border-radius:16px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.05);
+      color:var(--text);
+      outline:none;
+      font-size:15px;
+    }
+
+    .text-answer:focus{
+      border-color:rgba(124,58,237,.65);
+      box-shadow:0 0 0 4px rgba(124,58,237,.15);
+    }
+
+    .actions{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:16px;
+    }
+
+    .result{
+      display:grid;
+      grid-template-columns:repeat(4, minmax(0, 1fr));
+      gap:10px;
+      margin-bottom:16px;
+    }
+
+    .result .box{
+      padding:14px;
+      border-radius:18px;
+      background:rgba(255,255,255,.05);
+      border:1px solid var(--line);
+    }
+
+    .result .label{font-size:12px;color:var(--muted)}
+    .result .num{font-size:24px;font-weight:900;margin-top:6px}
+
+    .wrong-list{
+      display:grid;
+      gap:12px;
+    }
+
+    .wrong-item{
+      padding:14px;
+      border-radius:18px;
+      background:rgba(255,255,255,.05);
+      border:1px solid var(--line);
+    }
+
+    .wrong-item .title{
+      margin:0 0 8px;
+      font-weight:800;
+    }
+
+    .wrong-item .meta{color:var(--muted);font-size:13px;line-height:1.55}
+
+    .footer-note{
+      margin-top:12px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.55;
+    }
+
+    /* Modal Styles */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .modal.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-content {
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 24px;
+      width: min(500px, 90%);
+      position: relative;
+      box-shadow: var(--shadow);
+      transform: translateY(20px);
+      transition: transform 0.2s ease;
+    }
+
+    .modal.active .modal-content {
+      transform: translateY(0);
+    }
+
+    .modal-content h2 {
+      margin-top: 0;
+      margin-bottom: 16px;
+      font-size: 20px;
+    }
+
+    .modal-content ul {
+      padding-left: 20px;
+      margin-bottom: 16px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .modal-content li {
+      margin-bottom: 8px;
+    }
+
+    .close-modal {
+      position: absolute;
+      top: 20px;
+      right: 24px;
+      font-size: 24px;
+      cursor: pointer;
+      color: var(--muted);
+      line-height: 1;
+    }
+
+    .close-modal:hover {
+      color: #fff;
+    }
+
+    @media (max-width: 980px){
+      .grid{grid-template-columns:1fr}
+      .main{min-height:auto}
+      .result{grid-template-columns:repeat(2, 1fr)}
+    }
+
+    @media (max-width: 560px){
+      .wrap{width:min(100% - 14px, 1120px)}
+      .hero-main, .panel, .main{padding:14px}
+      .result{grid-template-columns:1fr}
+      .stats{grid-template-columns:1fr}
+      .question{font-size:16px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="card hero-main">
+        <div class="eyebrow">ABCD Web Quiz</div>
+        <h1>Ôn tập file .abcd với giao diện hiện đại</h1>
+        <p class="desc">
+          Hỗ trợ 3 dạng câu (Trắc nghiệm, Đúng/Sai, Trả lời ngắn). Hoạt động hoàn toàn trên trình duyệt, có khả năng tự chấm điểm và lọc lại câu sai.
+        </p>
+      </div>
+    </section>
+
+    <section class="grid">
+      <aside class="card panel">
+        <div class="section-title">Tệp dữ liệu</div>
+        <div class="upload">
+          <div id="dropzone" class="dropzone">
+            <p class="big">Kéo thả file .abcd vào đây</p>
+            <p class="small">Hoặc bấm chọn file JSON có cấu trúc tương ứng.</p>
+          </div>
+          <input id="fileInput" type="file" accept=".abcd,.json,application/json" />
+          <div class="btnrow">
+            <button class="primary" id="startBtn">Bắt đầu kiểm tra</button>
+            <button class="ghost" id="guideBtn">Hướng dẫn sử dụng</button>
+            <button class="ghost" id="promptBtn">Copy prompt</button>
+          </div>
+        </div>
+
+        <div class="stats">
+          <div class="stat"><div class="k">Tổng câu</div><div class="v" id="totalStat">0</div></div>
+          <div class="stat"><div class="k">Đúng</div><div class="v" id="correctStat">0</div></div>
+          <div class="stat"><div class="k">Sai</div><div class="v" id="wrongStat">0</div></div>
+        </div>
+
+        <p class="footer-note">
+          Định dạng dữ liệu:
+          <br><code>{"abcd":[["Câu hỏi",["A","B","C","D"],0]],"ds":[["Câu?",["Ý1","Ý2"],"ds"]],"tln":[["Câu?","đáp án"]]}</code>
+        </p>
+      </aside>
+
+      <main class="card main">
+        <div id="homeView">
+          <div class="section-title">Thông tin tệp</div>
+          <div class="question-card">
+            <p class="question" id="homeStatusTitle">Chưa có bài nào được tải.</p>
+            <p class="desc" id="homeStatusDesc">Vui lòng tải tệp .abcd lên để xem thông tin số lượng câu hỏi và bắt đầu làm bài.</p>
+          </div>
+        </div>
+
+        <div id="quizView" class="hidden">
+          <div class="progress">
+            <div id="progressText">Câu 1/1</div>
+            <div id="sectionText">Phần</div>
+          </div>
+          <div class="bar"><div id="progressBar"></div></div>
+
+          <div class="question-card">
+            <div class="mode" id="modeTag">Trắc nghiệm</div>
+            <p class="question" id="questionText"></p>
+            <div id="answerArea"></div>
+            <div class="actions">
+              <button class="ghost" id="prevBtn">Quay lại</button>
+              <button class="primary" id="nextBtn">Tiếp theo</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="resultView" class="hidden">
+          <div class="section-title">Kết quả</div>
+          <div class="result">
+            <div class="box"><div class="label">Tổng câu</div><div class="num" id="rTotal">0</div></div>
+            <div class="box"><div class="label">Đúng</div><div class="num" id="rCorrect">0</div></div>
+            <div class="box"><div class="label">Sai</div><div class="num" id="rWrong">0</div></div>
+            <div class="box"><div class="label">Tỉ lệ</div><div class="num" id="rPercent">0%</div></div>
+          </div>
+
+          <div class="btnrow" style="margin-bottom:14px">
+            <button class="primary" id="retryBtn">Làm lại bài này</button>
+            <button class="success" id="newBtn">Chọn bài khác</button>
+            <button class="ghost" id="showWrongBtn">Xem câu sai</button>
+          </div>
+
+          <div id="wrongPanel" class="wrong-list hidden"></div>
+        </div>
+      </main>
+    </section>
+  </div>
+
+  <div id="guideModal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal" id="closeGuide">&times;</span>
+      <h2>Hướng dẫn sử dụng</h2>
+      <ul>
+        <li><b>Bước 1:</b> Nhấn "Copy prompt" và gửi kèm với file tài liệu/đề cương cho AI (như Gemini, ChatGPT) để AI tạo mã định dạng JSON.</li>
+        <li><b>Bước 2:</b> Lưu đoạn mã AI trả về thành một tệp có đuôi là <code>.abcd</code> hoặc <code>.json</code>.</li>
+        <li><b>Bước 3:</b> Kéo thả file đó vào phần "Tệp dữ liệu" (hoặc bấm để chọn file).</li>
+        <li><b>Bước 4:</b> Web sẽ đếm số câu hỏi. Bấm <b>"Bắt đầu kiểm tra"</b> để làm bài.</li>
+        <li><b>Bước 5:</b> Sau khi làm xong, bạn có thể xem lại kết quả và danh sách các câu trả lời sai.</li>
+      </ul>
+      <button class="primary" style="width: 100%; margin-top: 10px;" id="closeGuideBtn">Đã hiểu</button>
+    </div>
+  </div>
+
+  <script>
+    const PROMPT_TEXT = `Bạn là một công cụ trích xuất dữ liệu chuyên nghiệp. Nhiệm vụ của bạn là chuyển đổi Đề cương + Đáp án được cung cấp thành một tệp dữ liệu chuẩn JSON để lưu dưới đuôi .abcd.
+
+### QUY TẮC ĐẦU RA BẮT BUỘC:
+1. Chỉ xuất duy nhất mã JSON. Không giải thích, không nhận xét, không thêm văn bản thừa.
+2. Dùng dấu nháy kép ("") cho toàn bộ chuỗi. Không có dấu phẩy thừa ở cuối danh sách.
+3. Phân loại vào 3 nhóm:
+   - "abcd": Trắc nghiệm 4 lựa chọn, 1 đáp án đúng. (Index đúng bắt đầu từ 0).
+   - "ds": Câu hỏi Đúng/Sai. Mỗi ý hiển thị 2 nút: Đúng và Sai. Đáp án là chuỗi ký tự gồm 'd' hoặc 's'.
+   - "tln": Trả lời ngắn. Đáp án là một chuỗi văn bản cụ thể cần nhập chính xác.
+
+### CẤU TRÚC JSON MẪU:
+{
+  "abcd": [
+    ["Câu hỏi trắc nghiệm?", ["Phương án A", "Phương án B", "Phương án C", "Phương án D"], 0]
+  ],
+  "ds": [
+    ["Câu hỏi có các ý đúng sai:", ["Ý 1", "Ý 2", "Ý 3", "Ý 4"], "ddss"]
+  ],
+  "tln": [
+    ["Câu hỏi yêu cầu điền từ?", "đáp án"]
+  ]
+}
+
+### QUY TẮC XỬ LÝ NỘI DUNG:
+- Làm sạch dữ liệu: loại bỏ ký tự rác, ký hiệu đầu dòng thừa.
+- Nếu dữ liệu chỉ có đáp án mà không có câu hỏi rõ ràng, hãy dựa vào ngữ cảnh đề cương để hoàn thiện.
+- Giữ nguyên tiếng Việt có dấu.
+- Không trích xuất các câu tự luận dài.
+
+Bây giờ, hãy đọc phần Đề cương + Đáp án tôi dán bên dưới và thực hiện chuyển đổi.`;
+
+    const state = {
+      data: null,
+      order: [],
+      currentIndex: 0,
+      answers: [],
+      resultDetail: []
+    };
+
+    const el = (id) => document.getElementById(id);
+
+    const fileInput = el('fileInput');
+    const dropzone = el('dropzone');
+    const homeView = el('homeView');
+    const quizView = el('quizView');
+    const resultView = el('resultView');
+    const wrongPanel = el('wrongPanel');
+    const guideModal = el('guideModal');
+
+    function normalize(v){
+      return String(v ?? '').trim().toLowerCase();
+    }
+
+    function shuffle(arr){
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function validateData(data){
+      if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
+      return ['abcd', 'ds', 'tln'].some(k => Array.isArray(data[k]) && data[k].length);
+    }
+
+    function loadDataFromText(text){
+      let data;
+      try{
+        data = JSON.parse(text);
+      }catch(e){
+        alert('File JSON không hợp lệ: ' + e.message);
+        return false;
+      }
+      if (!validateData(data)){
+        alert('File không đúng định dạng .abcd hoặc không có câu hỏi hợp lệ.');
+        return false;
+      }
+      state.data = data;
+      prepareQuiz(); 
+      updateHomeStatus();
+      return true;
+    }
+
+    function updateHomeStatus() {
+      if (!state.data) {
+        el('homeStatusTitle').textContent = 'Chưa có bài nào được tải.';
+        el('homeStatusDesc').textContent = 'Vui lòng tải tệp .abcd lên để xem thông tin số lượng câu hỏi và bắt đầu làm bài.';
+      } else {
+        const abcdCount = Array.isArray(state.data.abcd) ? state.data.abcd.length : 0;
+        const dsCount = Array.isArray(state.data.ds) ? state.data.ds.length : 0;
+        const tlnCount = Array.isArray(state.data.tln) ? state.data.tln.length : 0;
+        const totalCount = abcdCount + dsCount + tlnCount;
+        
+        el('homeStatusTitle').textContent = 'Tải tệp thành công!';
+        el('homeStatusDesc').innerHTML = `
+          Tệp dữ liệu có tổng cộng <b>${totalCount}</b> câu hỏi:<br>
+          - Phần Trắc nghiệm (abcd): ${abcdCount} câu<br>
+          - Phần Đúng/Sai (ds): ${dsCount} câu<br>
+          - Phần Trả lời ngắn (tln): ${tlnCount} câu<br><br>
+          Nhấn nút <b>"Bắt đầu kiểm tra"</b> để làm bài.
+        `;
+      }
+    }
+
+    function prepareQuiz(){
+      const order = [];
+      ['abcd', 'ds', 'tln'].forEach(mode => {
+        const items = Array.isArray(state.data[mode]) ? state.data[mode] : [];
+        const sectionItems = items.map((item, idx) => ({ mode, item, originalIndex: idx }));
+        order.push(...shuffle(sectionItems));
+      });
+      state.order = order;
+      state.currentIndex = 0;
+      state.answers = new Array(state.order.length).fill(null);
+      updateStats();
+    }
+
+    function getCurrentQuestion(){
+      return state.order[state.currentIndex];
+    }
+
+    function renderQuiz(){
+      homeView.classList.add('hidden');
+      resultView.classList.add('hidden');
+      quizView.classList.remove('hidden');
+      wrongPanel.classList.add('hidden');
+      renderQuestion();
+    }
+
+    function renderQuestion(){
+      const q = getCurrentQuestion();
+      if (!q){
+        finishQuiz();
+        return;
+      }
+
+      const total = state.order.length;
+      const current = state.currentIndex + 1;
+
+      el('progressText').textContent = `Câu ${current}/${total}`;
+      
+      const tagMap = {
+        abcd: 'Trắc nghiệm nhiều lựa chọn',
+        ds: 'Đúng/Sai',
+        tln: 'Trả lời ngắn'
+      };
+      
+      el('sectionText').textContent = tagMap[q.mode];
+      el('progressBar').style.width = `${(current - 1) / total * 100}%`;
+      el('modeTag').textContent = tagMap[q.mode];
+      el('questionText').textContent = q.item[0];
+
+      const area = el('answerArea');
+      area.innerHTML = '';
+
+      if (q.mode === 'abcd'){
+        // Giữ cố định thứ tự option cho từng câu trắc nghiệm
+        if (!q.displayOptions) {
+          q.displayOptions = shuffle(q.item[1].map((text, idx) => ({ text, idx })));
+        }
+        const options = q.displayOptions;
+
+        const selected = state.answers[state.currentIndex]?.selected ?? '';
+        const wrap = document.createElement('div');
+        wrap.className = 'options';
+
+        options.forEach((opt, i) => {
+          const id = `opt_${state.currentIndex}_${i}`;
+          const label = document.createElement('label');
+          label.className = 'option';
+          label.setAttribute('for', id);
+          label.innerHTML = `
+            <input type="radio" name="answer" id="${id}" value="${opt.idx}" ${String(selected) === String(opt.idx) ? 'checked' : ''}>
+            <span><b>${String.fromCharCode(65 + i)}.</b> ${escapeHtml(opt.text)}</span>
+          `;
+          wrap.appendChild(label);
+        });
+
+        area.appendChild(wrap);
+        area.dataset.type = 'abcd';
+        area.dataset.correct = String(q.item[2]);
+        area.dataset.options = JSON.stringify(options);
+      } else if (q.mode === 'ds'){
+        const statements = q.item[1].slice();
+
+        // Giữ cố định thứ tự hiển thị cho từng câu Đúng/Sai
+        if (!q.displayOrder) {
+          q.displayOrder = shuffle(statements.map((_, i) => i));
+        }
+        const shuffledIndices = q.displayOrder;
+
+        // Đáp án chuẩn theo đúng thứ tự hiển thị đã cố định
+        if (!q.correctAnswer) {
+          q.correctAnswer = shuffledIndices.map(i => normalize(q.item[2])[i] || '').join('');
+        }
+
+        const saved = String(state.answers[state.currentIndex]?.value ?? '');
+
+        const wrap = document.createElement('div');
+        wrap.className = 'options';
+
+        shuffledIndices.forEach((origIdx, pos) => {
+          const text = statements[origIdx];
+          const row = document.createElement('div');
+          row.className = 'ds-row';
+          const selected = saved[pos] || '';
+          const name = `ds_${state.currentIndex}_${pos}`;
+          row.innerHTML = `
+            <div class="ds-statement">
+              <span class="ds-label">${String.fromCharCode(97 + pos)}.</span>
+              <span>${escapeHtml(text)}</span>
+            </div>
+            <div class="ds-choices">
+              <label class="ds-choice">
+                <input type="radio" name="${name}" value="d" ${selected === 'd' ? 'checked' : ''}>
+                <span>Đúng</span>
+              </label>
+              <label class="ds-choice">
+                <input type="radio" name="${name}" value="s" ${selected === 's' ? 'checked' : ''}>
+                <span>Sai</span>
+              </label>
+            </div>
+          `;
+          wrap.appendChild(row);
+        });
+
+        area.appendChild(wrap);
+        area.dataset.type = 'ds';
+      } else {
+        const input = document.createElement('input');
+        input.className = 'text-answer';
+        input.id = 'tlnInput';
+        input.placeholder = 'Nhập đáp án chính xác';
+        input.value = state.answers[state.currentIndex]?.value ?? '';
+        area.appendChild(input);
+        area.dataset.type = 'tln';
+        area.dataset.correct = normalize(q.item[1]);
+      }
+
+      el('prevBtn').disabled = state.currentIndex === 0;
+      el('prevBtn').style.opacity = state.currentIndex === 0 ? .5 : 1;
+      el('nextBtn').textContent = current === total ? 'Nộp bài' : 'Tiếp theo';
+      updateStats();
+    }
+
+    function getUserAnswer(){
+      const q = getCurrentQuestion();
+      const area = el('answerArea');
+      if (!q) return null;
+
+      if (q.mode === 'abcd'){
+        const checked = area.querySelector('input[type="radio"]:checked');
+        return checked ? { selected: checked.value, value: checked.value } : null;
+      }
+
+      if (q.mode === 'ds'){
+        const groups = [...new Set(Array.from(area.querySelectorAll('.ds-choice input[type="radio"]')).map(r => r.name))];
+        const value = groups.map(name => {
+          const checked = Array.from(area.querySelectorAll(`input[name="${name}"]`)).find(r => r.checked);
+          return checked ? checked.value : '';
+        }).join('');
+        return value ? { value } : null;
+      }
+
+      const input = area.querySelector('input.text-answer');
+      return input ? { value: input.value } : null;
+    }
+
+    function saveCurrentAnswer(){
+      const ans = getUserAnswer();
+      state.answers[state.currentIndex] = ans;
+    }
+
+    function nextQuestion(){
+      saveCurrentAnswer();
+      if (state.currentIndex < state.order.length - 1){
+        state.currentIndex++;
+        renderQuestion();
+      } else {
+        finishQuiz();
+      }
+    }
+
+    function prevQuestion(){
+      saveCurrentAnswer();
+      if (state.currentIndex > 0){
+        state.currentIndex--;
+        renderQuestion();
+      }
+    }
+
+    function evaluateQuestion(q, user){
+      if (!q) return { correct: false, expected: '' };
+
+      if (q.mode === 'abcd'){
+        // Vì options value đã lưu đúng idx gốc của đáp án nên chỉ cần so sánh với item[2]
+        return { correct: String(user?.selected) === String(q.item[2]), expected: String(q.item[2]) };
+      }
+
+      if (q.mode === 'ds'){
+        const expected = normalize(q.correctAnswer ?? '');
+        return { correct: normalize(user?.value) === expected, expected };
+      }
+
+      return { correct: normalize(user?.value) === normalize(q.item[1]), expected: normalize(q.item[1]) };
+    }
+
+    function finishQuiz(){
+      saveCurrentAnswer();
+      let correct = 0;
+      const detail = [];
+
+      state.order.forEach((q, i) => {
+        const user = state.answers[i];
+        const result = evaluateQuestion(q, user);
+        if (result.correct) correct++;
+        else detail.push({ q, user, expected: result.expected, idx: i });
+      });
+
+      const total = state.order.length;
+      const wrong = total - correct;
+      const percent = total ? Math.round((correct / total) * 1000) / 10 : 0;
+
+      el('rTotal').textContent = total;
+      el('rCorrect').textContent = correct;
+      el('rWrong').textContent = wrong;
+      el('rPercent').textContent = percent + '%';
+
+      state.resultDetail = detail;
+      updateStats();
+      quizView.classList.add('hidden');
+      homeView.classList.add('hidden');
+      resultView.classList.remove('hidden');
+      wrongPanel.classList.add('hidden');
+      el('progressBar').style.width = '100%';
+    }
+
+    function renderWrongList(){
+      const list = state.resultDetail || [];
+      if (!list.length){
+        wrongPanel.innerHTML = `<div class="wrong-item"><div class="title">Không có câu nào sai</div><div class="meta">Làm rất tốt.</div></div>`;
+      } else {
+        wrongPanel.innerHTML = list.map((entry, idx) => {
+          const q = entry.q;
+          let expectedText = '';
+          let userText = '';
+          
+          if (q.mode === 'abcd'){
+             // Lấy ra nội dung của đáp án đúng (từ mảng options gốc)
+             const correctText = q.item[1][q.item[2]];
+             expectedText = 'Đáp án đúng: ' + correctText;
+             
+             // Lấy ra nội dung của đáp án user chọn
+             let userSelectedText = '-';
+             if(entry.user && entry.user.selected !== undefined) {
+                userSelectedText = q.item[1][entry.user.selected];
+             }
+             userText = 'Bạn chọn: ' + userSelectedText;
+          } else if (q.mode === 'ds'){
+            expectedText = 'Đáp án đúng theo thứ tự đã đảo: ' + entry.expected;
+            userText = 'Bạn chọn: ' + (entry.user?.value ?? '-');
+          } else {
+            expectedText = 'Đáp án đúng: ' + q.item[1];
+            userText = 'Bạn nhập: ' + (entry.user?.value ?? '-');
+          }
+          return `
+            <div class="wrong-item">
+              <p class="title">Câu sai ${idx + 1}: ${escapeHtml(q.item[0])}</p>
+              <div class="meta">${escapeHtml(userText)}</div>
+              <div class="meta" style="color:var(--accent-2)">${escapeHtml(expectedText)}</div>
+            </div>
+          `;
+        }).join('');
+      }
+      wrongPanel.classList.toggle('hidden');
+    }
+
+    function updateStats(){
+      const total = state.order.length || 0;
+      let correct = 0;
+      let answered = 0;
+
+      state.order.forEach((q, i) => {
+        const user = state.answers[i];
+        if (user && (user.value !== undefined || user.selected !== undefined)) answered++;
+        if (!user) return;
+        
+        const result = evaluateQuestion(q, user);
+        if (result.correct) correct++;
+      });
+
+      el('totalStat').textContent = total;
+      el('correctStat').textContent = correct;
+      el('wrongStat').textContent = Math.max(0, answered - correct);
+    }
+
+    function handleFileSelect(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => loadDataFromText(String(reader.result || ''));
+      reader.onerror = () => alert('Không đọc được file.');
+      reader.readAsText(file, 'utf-8');
+    }
+
+    function resetToHome(){
+      state.data = null;
+      state.order = [];
+      state.currentIndex = 0;
+      state.answers = [];
+      state.resultDetail = [];
+      fileInput.value = '';
+      homeView.classList.remove('hidden');
+      quizView.classList.add('hidden');
+      resultView.classList.add('hidden');
+      wrongPanel.classList.add('hidden');
+      el('progressBar').style.width = '0%';
+      updateHomeStatus();
+      updateStats();
+    }
+
+    function escapeHtml(str){
+      return String(str)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    // Modal Logic
+    function openGuide() {
+      guideModal.classList.add('active');
+    }
+    
+    function closeGuide() {
+      guideModal.classList.remove('active');
+    }
+
+    // Event Listeners
+    el('guideBtn').addEventListener('click', openGuide);
+    el('closeGuide').addEventListener('click', closeGuide);
+    el('closeGuideBtn').addEventListener('click', closeGuide);
+    
+    // Đóng popup khi click ra ngoài nội dung
+    guideModal.addEventListener('click', (e) => {
+      if (e.target === guideModal) {
+        closeGuide();
+      }
+    });
+
+    el('startBtn').addEventListener('click', () => {
+      if (!state.data) {
+        alert('Vui lòng tải file .abcd lên trước (kéo thả hoặc bấm nút chọn file).');
+        return;
+      }
+      if(state.order.length === 0) prepareQuiz();
+      renderQuiz();
+    });
+
+    el('promptBtn').addEventListener('click', async () => {
+      try{
+        await navigator.clipboard.writeText(PROMPT_TEXT);
+        alert('Đã copy prompt vào clipboard.');
+      }catch(e){
+        alert('Trình duyệt không cho copy tự động. Bạn có thể copy thủ công từ code.');
+      }
+    });
+
+    el('nextBtn').addEventListener('click', nextQuestion);
+    el('prevBtn').addEventListener('click', prevQuestion);
+    el('retryBtn').addEventListener('click', () => {
+      if (!state.data) return;
+      prepareQuiz();
+      renderQuiz();
+    });
+    el('newBtn').addEventListener('click', resetToHome);
+    el('showWrongBtn').addEventListener('click', renderWrongList);
+
+    fileInput.addEventListener('change', (e) => handleFileSelect(e.target.files?.[0]));
+
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('dragover');
+    });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      const file = e.dataTransfer.files?.[0];
+      if (file) {
+        fileInput.files = e.dataTransfer.files;
+        handleFileSelect(file);
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (quizView.classList.contains('hidden')) return;
+      if (e.key === 'Enter' && !e.shiftKey) {
+        const active = document.activeElement;
+        if (active && (active.id === 'tlnInput' || active.id === 'dsInput')) {
+          nextQuestion();
+        }
+      }
+      if (e.key === 'ArrowRight') nextQuestion();
+      if (e.key === 'ArrowLeft') prevQuestion();
+    });
+
+    updateHomeStatus();
+    updateStats();
+  </script>
+</body>
+</html>
