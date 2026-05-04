@@ -160,6 +160,16 @@
     .admin-zone { background: rgba(34, 197, 94, 0.1); border: 1px solid var(--accent-success); border-radius: 14px; padding: 15px; margin-bottom: 12px; text-align: center; }
     .admin-title { margin: 0 0 10px 0; font-size: 12px; font-weight: bold; color: var(--accent-success); letter-spacing: 1px; }
     .admin-key { font-family: monospace; font-size: 24px; letter-spacing: 4px; color: #fff; margin-bottom: 15px; font-weight: bold;}
+    .custom-select {
+      appearance: none;
+      -webkit-appearance: none;
+      /* Thêm icon mũi tên màu trắng để nhận diện dropdown */
+      background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23ffffff%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.4-12.8z%22%2F%3E%3C%2Fsvg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      background-size: 12px;
+      padding-right: 40px !important;
+    }
   </style>
 </head>
 <body>
@@ -178,7 +188,7 @@
       <div id="setupZone">
         <section class="card">
           <h2>📂 Chọn đề từ hệ thống</h2>
-          <select id="repoExamSelect" class="text-answer" style="padding: 12px; margin-bottom: 12px; cursor: pointer;">
+          <select id="repoExamSelect" class="text-answer custom-select" style="padding: 12px; margin-bottom: 12px; cursor: pointer;">
             <option value="">-- Đang tải danh sách đề... --</option>
           </select>
           <button class="btn-primary" id="loadRepoBtn" style="width: 100%" disabled>⬇️ Tải đề đã chọn</button>
@@ -237,6 +247,7 @@
             <button class="btn-ghost" id="prevBtn">⬅️ Quay lại</button>
             <button class="btn-primary" id="nextBtn">Tiếp theo ➡️</button>
           </div>
+          <button class="btn-success" id="submitQuizBtn" style="width: 100%; margin-top: 12px;">✅ Nộp bài</button>
           <p style="text-align: center; font-size: 12px; color: var(--muted); margin-top: 15px;">Mẹo: Dùng phím ⬅️ ➡️ để điều hướng</p>
         </section>
       </div>
@@ -557,7 +568,7 @@
       }
 
       document.getElementById('prevBtn').disabled = (state.currentIndex === 0);
-      document.getElementById('nextBtn').textContent = (state.currentIndex === total - 1) ? 'Nộp bài 🚀' : 'Tiếp theo ➡️';
+      document.getElementById('nextBtn').disabled = (state.currentIndex === state.questions.length - 1);
     }
 
     function saveAnswer() {
@@ -577,8 +588,20 @@
 
     document.getElementById('nextBtn').onclick = () => {
       saveAnswer();
-      if (state.currentIndex < state.questions.length - 1) { state.currentIndex++; renderQuestion(); } 
-      else { finishQuiz(); }
+      if (state.currentIndex < state.questions.length - 1) { 
+        state.currentIndex++; 
+        renderQuestion(); 
+      } 
+    };
+
+    // Thêm logic cho nút Nộp bài
+    document.getElementById('submitQuizBtn').onclick = () => {
+      saveAnswer(); // Lưu lại đáp án của câu hiện tại đang đứng
+      // Thêm bước xác nhận
+      const confirmSubmit = confirm("Bạn có chắc chắn muốn nộp bài không?");
+      if (confirmSubmit) {
+        finishQuiz();
+      }
     };
 
     document.getElementById('prevBtn').onclick = () => {
@@ -591,10 +614,18 @@
       const active = document.activeElement;
       const isTyping = active && active.tagName === 'INPUT' && active.type === 'text';
 
-      if (e.key === 'Enter' && isTyping) { document.getElementById('nextBtn').click(); return; }
+      if (e.key === 'Enter' && isTyping) { 
+        if (state.currentIndex < state.questions.length - 1) document.getElementById('nextBtn').click(); 
+        return; 
+      }
       if (isTyping) return;
-      if (e.key === 'ArrowRight') document.getElementById('nextBtn').click();
-      if (e.key === 'ArrowLeft') document.getElementById('prevBtn').click();
+      
+      if (e.key === 'ArrowRight') {
+        if (state.currentIndex < state.questions.length - 1) document.getElementById('nextBtn').click();
+      }
+      if (e.key === 'ArrowLeft') {
+        document.getElementById('prevBtn').click();
+      }
     });
 
     function finishQuiz() {
