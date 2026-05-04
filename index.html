@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hệ Thống Ôn Tập Sigma</title>
+  <title>Hệ Thống Ôn Tập - Tối Ưu UX/UI</title>
   <style>
     :root {
       --bg: #0b1020;
@@ -153,13 +153,27 @@
     .wrong-item .c-ans { color: var(--accent-success); font-size: 14px; font-weight: bold; }
 
     input[type="file"] { display: none; }
-    
     select option { background: #0f172a; color: #fff; }
+
+    /* CSS Hệ Thống Auth / Admin */
+    .login-container { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 20px; }
+    .admin-zone { background: rgba(34, 197, 94, 0.1); border: 1px solid var(--accent-success); border-radius: 14px; padding: 15px; margin-bottom: 12px; text-align: center; }
+    .admin-title { margin: 0 0 10px 0; font-size: 12px; font-weight: bold; color: var(--accent-success); letter-spacing: 1px; }
+    .admin-key { font-family: monospace; font-size: 24px; letter-spacing: 4px; color: #fff; margin-bottom: 15px; font-weight: bold;}
   </style>
 </head>
 <body>
 
-  <div class="container">
+  <div id="loginZone" class="login-container">
+    <div class="card" style="max-width: 400px; width: 100%; text-align: center;">
+      <h2 style="font-size: 22px;">🔒 Kích Hoạt Thiết Bị</h2>
+      <p style="color: var(--muted); font-size: 14px; margin-bottom: 20px;">Hệ thống yêu cầu Key truy cập. Vui lòng liên hệ Admin để lấy mã (Mã tự động đổi mỗi phút).</p>
+      <input type="text" id="accessKeyInput" class="text-answer" placeholder="NHẬP KEY..." style="text-transform: uppercase; text-align: center; font-weight: bold; letter-spacing: 2px; font-size: 18px; margin-bottom: 15px;">
+      <button class="btn-primary" id="verifyKeyBtn" style="width: 100%;">Mở Khóa Hệ Thống</button>
+    </div>
+  </div>
+
+  <div class="container" id="mainContainer">
     <aside class="sidebar">
       <div id="setupZone">
         <section class="card">
@@ -171,6 +185,13 @@
         </section>
 
         <div style="text-align: center; margin: 10px 0; color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: 0.05em;">— HOẶC TỰ TẢI FILE LÊN —</div>
+
+        <div id="adminZone" class="admin-zone hidden">
+          <p class="admin-title">🛠️ ADMIN MODE: KEY MỚI TẠO</p>
+          <div id="generatedKey" class="admin-key">--------</div>
+          <button class="btn-success" id="copyAdminKeyBtn" style="width: 100%; font-size: 13px;">📋 Copy & Đóng Admin</button>
+          <p style="font-size: 11px; color: var(--muted); margin-top: 10px; margin-bottom: 0;">Gửi key này cho bạn bè. Key có hiệu lực trong ±1 phút.</p>
+        </div>
 
         <section class="card">
           <h2>📚 Tải Đề Thi (PDF)</h2>
@@ -302,6 +323,56 @@
   </div>
 
   <script>
+    // --- CẤU HÌNH BẢO MẬT ADMIN ---
+    const SECRET_SALT = "DuyBaoDepZaiVCL"; 
+    const ADMIN_PASS = "tdn.xabcd0";
+
+    // --- KIỂM TRA QUYỀN TRUY CẬP (TOTP) ---
+    window.addEventListener('DOMContentLoaded', () => {
+      if (localStorage.getItem('isAuthorized') === 'true') {
+        document.getElementById('loginZone').style.display = 'none';
+      }
+    });
+
+    function verifyKey(inputKey) {
+      const now = new Date();
+      for (let i = -1; i <= 1; i++) {
+        const checkTime = new Date(now.getTime() + i * 60000);
+        const timeStr = checkTime.getFullYear() + "" + checkTime.getMonth() + "" + checkTime.getDate() + "" + checkTime.getHours() + "" + checkTime.getMinutes();
+        const validKey = btoa(timeStr + SECRET_SALT).substring(0, 8).toUpperCase();
+        if (inputKey === validKey) return true;
+      }
+      return false;
+    }
+
+    document.getElementById('verifyKeyBtn').onclick = () => {
+      const key = document.getElementById('accessKeyInput').value.trim().toUpperCase();
+      if (verifyKey(key)) {
+        localStorage.setItem('isAuthorized', 'true');
+        alert("Xác thực thành công! Máy đã được cấp quyền truy cập vĩnh viễn.");
+        document.getElementById('loginZone').style.display = 'none';
+      } else {
+        alert("Key không hợp lệ hoặc đã hết hạn (Key chỉ sống được ~1 phút)!");
+      }
+    };
+
+    document.getElementById('accessKeyInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') document.getElementById('verifyKeyBtn').click();
+    });
+
+    function generateKey() {
+      const now = new Date();
+      const timeStr = now.getFullYear() + "" + now.getMonth() + "" + now.getDate() + "" + now.getHours() + "" + now.getMinutes();
+      return btoa(timeStr + SECRET_SALT).substring(0, 8).toUpperCase();
+    }
+
+    document.getElementById('copyAdminKeyBtn').onclick = async () => {
+      const key = document.getElementById('generatedKey').textContent;
+      await navigator.clipboard.writeText(key);
+      alert("Đã copy key: " + key + "\n\nHãy gửi mã này cho bạn bè ngay.");
+      document.getElementById('adminZone').classList.add('hidden');
+    };
+
     // --- CẤU HÌNH GITHUB API ---
     const GITHUB_USER = 'BaoBao-creator'; 
     const GITHUB_REPO = 'ABCD';
@@ -331,17 +402,14 @@
         folders.forEach(folder => {
           const opt = document.createElement('option');
           opt.value = folder.path;
-          // Thay thế dấu gạch dưới bằng khoảng trắng cho hiển thị đẹp hơn
           opt.textContent = folder.name.replaceAll('_', ' '); 
           DOM.repoSelect.appendChild(opt);
         });
       } catch (error) {
         DOM.repoSelect.innerHTML = '<option value="">Chưa có dữ liệu đề trên hệ thống!</option>';
-        console.log("Lưu ý: Bạn cần tạo thư mục 'de' trên Github. Lỗi:", error);
       }
     }
     
-    // Khởi chạy khi load trang
     loadExamsFromGithub();
 
     DOM.repoSelect.onchange = () => { DOM.loadRepoBtn.disabled = !DOM.repoSelect.value; };
@@ -362,7 +430,7 @@
         DOM.lblJson.classList.add('active');
 
         const pdfUrl = baseUrl + 'exam.pdf';
-        state.examFile = { name: "exam.pdf" }; // Đánh dấu state
+        state.examFile = { name: "exam.pdf" }; 
         DOM.nameExam.textContent = "Hệ thống: exam.pdf";
         DOM.lblExam.classList.add('active');
         
@@ -371,7 +439,7 @@
         checkReady();
         alert("Đã tải xong đề: " + DOM.repoSelect.options[DOM.repoSelect.selectedIndex].text);
       } catch (e) {
-        alert("Lỗi! Đảm bảo trong thư mục đề trên GitHub có đủ 2 file: exam.pdf và answers.json (Lưu ý: Nếu vừa up file lên Github, cần đợi 1-2 phút).");
+        alert("Lỗi! Đảm bảo trong thư mục đề trên GitHub có đủ 2 file: exam.pdf và answers.json");
         console.error(e);
       } finally {
         DOM.loadRepoBtn.textContent = '⬇️ Tải đề đã chọn';
@@ -394,7 +462,18 @@
       const reader = new FileReader();
       reader.onload = (ev) => {
         try {
-          state.jsonData = JSON.parse(ev.target.result);
+          const data = JSON.parse(ev.target.result);
+          
+          // Kiểm tra chế độ Admin qua Trigger Key
+          if (data.admin_access === ADMIN_PASS) {
+            document.getElementById('generatedKey').textContent = generateKey();
+            document.getElementById('adminZone').classList.remove('hidden');
+            DOM.jsonInp.value = ""; // Xóa input để không lưu nhầm
+            return;
+          }
+
+          // Dòng chạy bình thường cho bài thi
+          state.jsonData = data;
           DOM.nameJson.textContent = file.name;
           DOM.lblJson.classList.add('active');
           checkReady();
