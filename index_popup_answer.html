@@ -1,0 +1,1711 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hệ Thống Ôn Tập Sigma</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: rgba(255, 255, 255, .08);
+      --text: #eef2ff;
+      --muted: rgba(238, 242, 255, .72);
+      --line: rgba(255, 255, 255, .14);
+      --accent: #7c3aed;
+      --accent-success: #22c55e;
+      --accent-danger: #ef4444;
+      --shadow: 0 20px 60px rgba(0,0,0,.35);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+    
+    body {
+      margin: 0;
+      height: 100vh;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      color: var(--text);
+      background: 
+        radial-gradient(circle at top left, rgba(124,58,237,.35), transparent 35%),
+        radial-gradient(circle at top right, rgba(34,197,94,.22), transparent 30%),
+        linear-gradient(180deg, #0a0f1d, #0f172a 55%, #08111f);
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+      overflow: hidden;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1400px;
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 20px;
+      height: 100%;
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      overflow-y: auto;
+      padding-right: 5px;
+    }
+    
+    .sidebar::-webkit-scrollbar { width: 6px; }
+    .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+
+    .card {
+      background: linear-gradient(180deg, var(--panel), rgba(255,255,255,.05));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 24px;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      box-shadow: var(--shadow);
+    }
+
+    h2 { font-size: 18px; margin: 0 0 12px; color: #fff; letter-spacing: 0.02em; }
+    
+    .upload-zone {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      border: 1.5px dashed rgba(255, 255, 255, .22); border-radius: 18px; padding: 22px 15px;
+      text-align: center; cursor: pointer; transition: all 0.2s ease; margin-bottom: 12px;
+      background: rgba(255, 255, 255, .04);
+    }
+    .upload-zone:hover, .upload-zone.dragover { border-color: var(--accent); background: rgba(124, 58, 237, .12); transform: translateY(-2px); }
+    .upload-zone.active { border-color: var(--accent-success); border-style: solid; background: rgba(34, 197, 94, .1); }
+    .upload-zone b { display: block; font-size: 14px; margin-bottom: 6px; }
+    .upload-zone span { font-size: 12px; color: var(--muted); word-break: break-all; }
+
+    .btn-group { display: flex; flex-direction: column; gap: 12px; }
+    .btn-group-row { display: flex; gap: 10px; margin-top: 20px; }
+    .btn-group-row button { flex: 1; }
+
+    button {
+      padding: 12px 16px; border: 1px solid rgba(255,255,255,.12); border-radius: 14px; 
+      font-weight: 700; cursor: pointer; transition: .2s ease; font-size: 14px; color: white;
+    }
+    button:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.1); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+    
+    .btn-primary { background: linear-gradient(135deg, var(--accent), #4f46e5); }
+    .btn-ghost { background: rgba(255,255,255,0.08); }
+    .btn-success { background: linear-gradient(135deg, #16a34a, #22c55e); }
+    .btn-danger { background: linear-gradient(135deg, #dc2626, #ef4444); }
+
+    .viewer-container {
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+      border-radius: var(--radius);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--line);
+      min-width: 0;
+      resize: both;
+      width: 100%;
+      min-width: 420px;
+      min-height: 420px;
+      max-width: 100%;
+      max-height: calc(100vh - 40px);
+      align-self: stretch;
+    }
+    #content-host {
+      flex-grow: 1;
+      height: 100%;
+      min-height: 0;
+      background: rgba(15, 23, 42, .72);
+    }
+    .pdf-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 14px;
+      background: rgba(15, 23, 42, .9);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      flex-wrap: wrap;
+    }
+    .pdf-toolbar .group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      flex: 1 1 auto;
+      justify-content: center;
+    }
+    .pdf-toolbar .page-label {
+      min-width: 74px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      padding: 0 4px;
+    }
+    .pdf-toolbar .toggle-on {
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+      border-color: rgba(34,197,94,.35);
+    }
+    .pdf-toolbar .toggle-off {
+      background: rgba(255,255,255,0.08);
+    }
+    .pdf-toolbar button {
+      padding: 9px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+    .pdf-toolbar .zoom-label {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+      min-width: 52px;
+      text-align: center;
+    }
+    .pdf-scroll {
+      height: 100%;
+      max-height: 100%;
+      overflow: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+    }
+    .pdf-page {
+      display: flex;
+      justify-content: center;
+      position: relative;
+    }
+    .pdf-canvas {
+      max-width: 100%;
+      height: auto;
+      border-radius: 12px;
+      box-shadow: 0 12px 30px rgba(0,0,0,.35);
+      background: #fff;
+    }
+    .pdf-ink-canvas {
+      position: absolute;
+      left: 0;
+      top: 0;
+      border-radius: 12px;
+      touch-action: none;
+      pointer-events: auto;
+    }
+    .pdf-draw-off .pdf-ink-canvas {
+      pointer-events: none;
+    }
+    .placeholder {
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      color: #cbd5e1;
+      font-weight: 500;
+      background: linear-gradient(180deg, rgba(15,23,42,.75), rgba(15,23,42,.95));
+      padding: 24px;
+      text-align: center;
+    }
+
+    .hidden { display: none !important; }
+    
+    .progress { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; color: var(--muted); font-size: 13px; font-weight: 500; }
+    .bar { width: 100%; height: 8px; border-radius: 999px; overflow: hidden; background: rgba(255,255,255,.08); border: 1px solid var(--line); margin-bottom: 20px; }
+    .bar > div { height: 100%; width: 0%; border-radius: 999px; background: linear-gradient(90deg, var(--accent), #22c55e); transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .mode { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: rgba(124,58,237,.15); border: 1px solid rgba(124,58,237,.28); color: #ddd6fe; font-size: 12px; font-weight: 600; margin-bottom: 15px; }
+
+    .quiz-question { font-size: 20px; font-weight: 800; margin-bottom: 20px; line-height: 1.4; }
+    
+    .options { display: grid; gap: 10px; }
+    .option { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 14px; background: rgba(255,255,255,.05); border: 1px solid var(--line); cursor: pointer; transition: .2s; }
+    .option:hover { background: rgba(255,255,255,.1); transform: translateX(2px); }
+    .option input { transform: scale(1.2); accent-color: var(--accent); margin: 0; }
+    .option span { font-size: 15px; font-weight: 600; }
+
+    .ds-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 14px; border-radius: 14px; background: rgba(255,255,255,.05); border: 1px solid var(--line); margin-bottom: 8px; }
+    .ds-row b { font-size: 15px; color: #fff; }
+    .ds-choices { display: flex; gap: 10px; }
+    .ds-choices label { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,.05); border: 1px solid var(--line); cursor: pointer; transition: .2s; font-size: 13px; }
+    .ds-choices label:hover { background: rgba(255,255,255,.1); }
+    
+    .text-answer { width: 100%; padding: 16px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.05); color: #fff; font-size: 15px; outline: none; transition: .2s; }
+    .text-answer:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(124,58,237,.15); }
+
+    .result-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+    .stat-box { background: rgba(255,255,255,.05); border: 1px solid var(--line); border-radius: 16px; padding: 15px; text-align: center; }
+    .stat-box .label { font-size: 12px; color: var(--muted); }
+    .stat-box .num { font-size: 24px; font-weight: 900; margin-top: 4px; }
+    .num.correct { color: var(--accent-success); }
+    .num.wrong { color: var(--accent-danger); }
+
+
+    .quiz-actions { margin-bottom: 14px; }
+    .quiz-actions .hint {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .answer-popup-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(3px);
+      z-index: 1490;
+      display: none;
+    }
+    .answer-popup-backdrop.active { display: block; }
+
+    .answer-popup {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: min(820px, 94vw);
+      height: min(78vh, 820px);
+      min-width: 340px;
+      min-height: 260px;
+      max-width: 96vw;
+      max-height: 92vh;
+      display: flex;
+      flex-direction: column;
+      background: linear-gradient(180deg, rgba(15, 23, 42, .98), rgba(2, 6, 23, .98));
+      border: 1px solid rgba(255, 255, 255, .14);
+      border-radius: 24px;
+      box-shadow: 0 25px 80px rgba(0, 0, 0, .55);
+      z-index: 1500;
+      overflow: hidden;
+      resize: both;
+    }
+    .answer-popup.hidden { display: none !important; }
+    .answer-popup.minimized {
+      height: 64px !important;
+      min-height: 64px !important;
+      resize: none;
+    }
+    .answer-popup-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.03);
+      user-select: none;
+    }
+    .answer-popup-title {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .answer-popup-title b {
+      font-size: 14px;
+      color: #fff;
+    }
+    .answer-popup-title span {
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 56vw;
+    }
+    .answer-popup-tools {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .answer-popup-tools button {
+      padding: 8px 10px;
+      font-size: 12px;
+      border-radius: 12px;
+      white-space: nowrap;
+    }
+    .answer-popup-zoom-label {
+      min-width: 54px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .answer-popup-body {
+      flex: 1;
+      overflow: auto;
+      padding: 16px;
+      background: rgba(15, 23, 42, .8);
+    }
+    .answer-popup-content {
+      transform-origin: top center;
+      width: 100%;
+    }
+    .answer-popup.minimized .answer-popup-body {
+      display: none;
+    }
+
+    @media (max-width: 980px) {
+      body { padding: 10px; overflow: auto; height: auto; min-height: 100vh; }
+      .container { grid-template-columns: 1fr; height: auto; display: flex; flex-direction: column; }
+      .viewer-container {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        min-height: 72vh;
+        margin-top: 10px;
+        resize: none;
+      }
+      .sidebar { overflow-y: visible; }
+      .pdf-toolbar {
+        padding: 10px 10px 8px;
+        gap: 8px;
+      }
+      .pdf-toolbar .group {
+        width: 100%;
+        justify-content: center;
+      }
+      .pdf-toolbar button {
+        padding: 8px 10px;
+        font-size: 12px;
+      }
+      .pdf-toolbar .page-label,
+      .pdf-toolbar .zoom-label {
+        min-width: 0;
+      }
+      .pdf-scroll { padding: 10px; gap: 10px; }
+    }
+
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 15px;}
+    .modal.active { display: flex; }
+    .modal-content { background: #0f172a; border-radius: var(--radius); padding: 24px; max-width: 600px; width: 100%; max-height: 85vh; overflow-y: auto; border: 1px solid var(--line); position: relative; }
+    .modal h3 { margin-top: 0; color: #fff; font-size: 20px; border-bottom: 1px solid var(--line); padding-bottom: 15px; margin-bottom: 15px; }
+    
+    .step { margin-bottom: 16px; font-size: 14px; line-height: 1.6; color: var(--muted); }
+    .step b { color: #fff; }
+    .step a { color: #38bdf8; text-decoration: none; font-weight: bold; border-bottom: 1px dashed #38bdf8; }
+    .step a:hover { color: #7dd3fc; }
+
+    .wrong-item { background: rgba(255,255,255,.05); border: 1px solid var(--line); padding: 15px; border-radius: 14px; margin-bottom: 12px; }
+    .wrong-item .q-title { font-weight: bold; margin-bottom: 8px; font-size: 15px; color: #fff;}
+    .wrong-item .u-ans { color: var(--muted); font-size: 14px; margin-bottom: 4px; }
+    .wrong-item .c-ans { color: var(--accent-success); font-size: 14px; font-weight: bold; }
+
+    input[type="file"] { display: none; }
+    select option { background: #0f172a; color: #fff; }
+
+    /* CSS Hệ Thống Auth / Admin */
+    .login-container { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 20px; }
+    .admin-zone { background: rgba(34, 197, 94, 0.1); border: 1px solid var(--accent-success); border-radius: 14px; padding: 15px; margin-bottom: 12px; text-align: center; }
+    .admin-title { margin: 0 0 10px 0; font-size: 12px; font-weight: bold; color: var(--accent-success); letter-spacing: 1px; }
+    .admin-key { font-family: monospace; font-size: 24px; letter-spacing: 4px; color: #fff; margin-bottom: 15px; font-weight: bold;}
+    /* Container chính của dropdown */
+    .custom-dropdown {
+      position: relative;
+      width: 100%;
+      user-select: none;
+    }
+    
+    /* Phần hiển thị giá trị đang chọn */
+    .dropdown-selected {
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, .05);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      cursor: pointer;
+      color: #fff;
+      font-size: 15px;
+      transition: 0.2s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .dropdown-selected::after {
+      content: '▼';
+      font-size: 10px;
+      color: var(--muted);
+    }
+    .dropdown-selected:hover { background: rgba(255, 255, 255, .1); }
+    
+    /* Danh sách xổ xuống */
+    .dropdown-list {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      right: 0;
+      background: #161b2c; /* Màu nền đậm hơn để nổi bật */
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      backdrop-filter: blur(20px);
+      z-index: 100;
+      max-height: 250px;
+      overflow-y: auto;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    
+    /* Từng item trong danh sách */
+    .dropdown-item {
+      padding: 12px 16px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: 0.2s;
+      color: var(--muted);
+    }
+    .dropdown-item:hover {
+      background: var(--accent);
+      color: #fff;
+    }
+    .dropdown-item.active {
+      background: rgba(124, 58, 237, 0.2);
+      color: var(--accent);
+      font-weight: bold;
+    }
+    
+    /* Tùy chỉnh thanh cuộn cho list */
+    .dropdown-list::-webkit-scrollbar { width: 4px; }
+    .dropdown-list::-webkit-scrollbar-thumb { background: var(--line); border-radius: 10px; }
+  </style>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body>
+
+  <div id="loginZone" class="login-container">
+    <div class="card" style="max-width: 400px; width: 100%; text-align: center;">
+      <h2 style="font-size: 22px;">🔒 Kích Hoạt Thiết Bị</h2>
+      <p style="color: var(--muted); font-size: 14px; margin-bottom: 20px;">Hệ thống yêu cầu Key truy cập. Vui lòng liên hệ Admin để lấy mã (Mã tự động đổi mỗi phút).</p>
+      <input type="text" id="accessKeyInput" class="text-answer" placeholder="NHẬP KEY..." style="text-transform: uppercase; text-align: center; font-weight: bold; letter-spacing: 2px; font-size: 18px; margin-bottom: 15px;">
+      <button class="btn-primary" id="verifyKeyBtn" style="width: 100%;">Mở Khóa Hệ Thống</button>
+    </div>
+  </div>
+
+  <div class="container" id="mainContainer">
+    <aside class="sidebar">
+      <div id="setupZone">
+        <section class="card">
+          <h2>📂 Chọn đề từ hệ thống</h2>
+          <!-- Custom Dropdown Wrapper -->
+          <div class="custom-dropdown" id="repoDropdown">
+            <div class="dropdown-selected" id="selectedExamName">-- Chọn một đề thi --</div>
+            <div class="dropdown-list hidden" id="repoExamList">
+              <!-- Các option sẽ được JS chèn vào đây -->
+              <div class="dropdown-item">Đang tải danh sách...</div>
+            </div>
+          </div>
+          <button class="btn-primary" id="loadRepoBtn" style="width: 100%; margin-top: 12px;" disabled>⬇️ Tải đề đã chọn</button>
+        </section>
+
+
+        <div style="text-align: center; margin: 10px 0; color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: 0.05em;">— HOẶC TỰ TẢI FILE LÊN —</div>
+
+        <div id="adminZone" class="admin-zone hidden">
+          <p class="admin-title">🛠️ ADMIN MODE: KEY MỚI TẠO</p>
+          <div id="generatedKey" class="admin-key">--------</div>
+          <button class="btn-success" id="copyAdminKeyBtn" style="width: 100%; font-size: 13px;">📋 Copy & Đóng Admin</button>
+          <p style="font-size: 11px; color: var(--muted); margin-top: 10px; margin-bottom: 0;">Gửi key này cho bạn bè. Key có hiệu lực trong ±1 phút.</p>
+        </div>
+
+        <section class="card">
+          <h2>📚 Tải Đề Thi (PDF)</h2>
+          <label class="upload-zone" id="labelExam">
+            <input type="file" id="examInput" accept=".pdf" />
+            <b>Bấm hoặc kéo thả File PDF</b>
+            <span id="nameExam">Chưa chọn file</span>
+          </label>
+        </section>
+
+        <section class="card">
+          <h2>🔑 Đáp Án (JSON)</h2>
+          <label class="upload-zone" id="labelJson">
+            <input type="file" id="jsonInput" accept=".json" />
+            <b>Bấm hoặc kéo thả File Đáp Án</b>
+            <span id="nameJson">Định dạng .json</span>
+          </label>
+        </section>
+
+        <section class="card">
+          <div class="btn-group">
+            <button class="btn-primary" id="startBtn" disabled>🚀 Bắt đầu làm bài</button>
+            <button class="btn-ghost" id="usageBtn">📖 Hướng dẫn sử dụng</button>
+            <button class="btn-ghost" id="guideBtn">💡 Lấy Prompt AI tạo JSON</button>
+          </div>
+        </section>
+      </div>
+
+      <div id="quizZone" class="hidden">
+        <section class="card">
+          <div class="progress">
+            <div id="progressText">Câu 1/1</div>
+            <div>Tiến độ</div>
+          </div>
+          <div class="bar"><div id="progressBar"></div></div>
+
+          <div class="mode" id="modeTag">Trắc nghiệm</div>
+          <div class="quiz-question" id="qNumber">Câu 1</div>
+          
+          <div class="quiz-actions">
+            <button class="btn-primary" id="toggleAnswerPopupBtn" type="button" style="width:100%;">🪟 Mở khung đáp án</button>
+            <p class="hint">Khung đáp án mở thành cửa sổ riêng, có thể thu nhỏ, phóng to và kéo giãn.</p>
+          </div>
+
+          <div class="btn-group-row">
+            <button class="btn-ghost" id="prevBtn">⬅️ Quay lại</button>
+            <button class="btn-primary" id="nextBtn">Tiếp theo ➡️</button>
+          </div>
+          <button class="btn-success" id="submitQuizBtn" style="width: 100%; margin-top: 12px;">✅ Nộp bài</button>
+          <p style="text-align: center; font-size: 12px; color: var(--muted); margin-top: 15px;">Mẹo: Dùng phím ⬅️ ➡️ để điều hướng</p>
+        </section>
+      </div>
+
+      <div id="resultZone" class="hidden">
+        <section class="card">
+          <h2 style="text-align:center; font-size: 24px; margin-bottom: 20px;">Hoàn thành! 🎉</h2>
+          
+          <div class="result-grid">
+            <div class="stat-box">
+              <div class="label">Tổng số câu</div>
+              <div class="num" id="rTotal">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="label">Tỉ lệ đúng</div>
+              <div class="num" id="rPercent" style="color: var(--accent);">0%</div>
+            </div>
+            <div class="stat-box">
+              <div class="label">Số câu đúng</div>
+              <div class="num correct" id="rCorrect">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="label">Số câu sai</div>
+              <div class="num wrong" id="rWrong">0</div>
+            </div>
+          </div>
+
+          <div class="btn-group">
+            <button class="btn-primary" id="viewWrongBtn">👀 Xem chi tiết câu sai</button>
+            <button class="btn-success" id="retryBtn">🔄 Làm lại bài này</button>
+            <button class="btn-ghost" id="resetBtn">🗑️ Chọn đề khác</button>
+          </div>
+        </section>
+      </div>
+    </aside>
+
+    <main class="viewer-container">
+      <div class="pdf-toolbar hidden" id="pdfToolbar">
+        <div class="group">
+          <button class="btn-ghost" id="pdfPrevPageBtn" type="button">&lt;</button>
+          <div class="page-label" id="pdfPageLabel">1 / 1</div>
+          <button class="btn-ghost" id="pdfNextPageBtn" type="button">&gt;</button>
+        </div>
+        <div class="group">
+          <button class="btn-ghost" id="pdfZoomOutBtn" type="button">−</button>
+          <div class="zoom-label" id="pdfZoomLabel">100%</div>
+          <button class="btn-ghost" id="pdfZoomInBtn" type="button">+</button>
+          <button class="btn-primary" id="pdfFitBtn" type="button">Fit Width</button>
+          <button class="btn-ghost toggle-on" id="pdfDrawToggleBtn" type="button">✏️ Vẽ: Bật</button>
+          <button class="btn-ghost" id="pdfUndoBtn" type="button">↶ Hoàn tác</button>
+          <button class="btn-ghost" id="pdfResetZoomBtn" type="button">Reset</button>
+        </div>
+      </div>
+      <div id="content-host">
+        <div class="placeholder" id="emptyMsg">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          Nội dung đề thi (.pdf) sẽ hiển thị tại đây
+        </div>
+      </div>
+    </main>
+  </div>
+
+
+  <div class="answer-popup-backdrop hidden" id="answerPopupBackdrop"></div>
+
+  <div class="answer-popup hidden" id="answerPopup">
+    <div class="answer-popup-header" id="answerPopupHeader">
+      <div class="answer-popup-title">
+        <b>Khung chọn đáp án</b>
+        <span id="answerPopupSubtitle">Mở rộng để chọn A/B/C/D, Đúng/Sai hoặc trả lời ngắn</span>
+      </div>
+      <div class="answer-popup-tools">
+        <button class="btn-ghost" id="answerPopupZoomOutBtn" type="button">−</button>
+        <div class="answer-popup-zoom-label" id="answerPopupZoomLabel">100%</div>
+        <button class="btn-ghost" id="answerPopupZoomInBtn" type="button">+</button>
+        <button class="btn-primary" id="answerPopupFitBtn" type="button">Fit</button>
+        <button class="btn-ghost" id="answerPopupMinBtn" type="button">▁</button>
+        <button class="btn-danger" id="answerPopupCloseBtn" type="button">✕</button>
+      </div>
+    </div>
+    <div class="answer-popup-body" id="answerPopupBody">
+      <div class="answer-popup-content" id="answerPopupContent">
+        <div id="answerArea"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="usageModal">
+    <div class="modal-content">
+      <h3>🌟 Hướng dẫn sử dụng</h3>
+      <div class="step">
+        1. <b>Chuyển Word sang PDF:</b> Truy cập trang 
+        <a href="https://word.cloud.microsoft/" target="_blank">word.cloud.microsoft</a>, 
+        tải file Word của bạn lên, chọn <b>File &rarr; Xuất (Export) &rarr; Tải xuống dưới dạng PDF</b>.
+      </div>
+      <div class="step">2. <b>Chuẩn bị đề:</b> Tải file PDF vừa có lên mục "Tải Đề Thi".</div>
+      <div class="step">3. <b>Tạo JSON:</b> Nhấn "Copy Prompt", gửi kèm nội dung đáp án cho AI để nhận mã JSON, lưu thành file .json.</div>
+      <div class="step">4. <b>Ôn tập:</b> Tải file JSON lên và nhấn "Bắt đầu làm bài"!</div>
+      <button class="btn-primary" style="width:100%; margin-top:10px" onclick="document.getElementById('usageModal').classList.remove('active')">Đã hiểu!</button>
+    </div>
+  </div>
+
+  <div class="modal" id="guideModal">
+    <div class="modal-content">
+      <h3>💡 Hướng dẫn tạo File JSON</h3>
+      <p style="color: var(--muted); font-size: 14px; line-height: 1.6;">
+        Copy prompt dưới đây gửi cho AI (Gemini/ChatGPT) kèm theo nội dung đáp án của bạn để lấy file JSON đúng chuẩn ứng dụng.
+      </p>
+      <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; font-family: monospace; font-size: 13px; margin-bottom: 15px; color: #a5b4fc; word-break: break-all; line-height: 1.5;">
+        Hãy đóng vai một công cụ trích xuất dữ liệu. Trích xuất đáp án thành JSON theo cấu trúc chính xác sau: {"abcd": {"1": 0, "2": 1}, "ds": {"1": "ddss"}, "tln": {"1": "đáp án"}}. Giải thích: Nhóm "abcd" là trắc nghiệm 4 lựa chọn (A=0, B=1, C=2, D=3). Nhóm "ds" là Đúng/Sai (d=Đúng, s=Sai, chuỗi 4 ký tự cho 4 ý a,b,c,d). Nhóm "tln" là trả lời ngắn. Các key ("1", "2"...) là số thứ tự câu trong từng phần. Chỉ xuất duy nhất mã JSON, không giải thích.
+      </div>
+      <div style="display:flex; gap:10px;">
+         <button class="btn-primary" style="flex:1" id="copyPromptBtn">📋 Copy Prompt</button>
+         <button class="btn-ghost" style="flex:1" onclick="document.getElementById('guideModal').classList.remove('active')">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="wrongModal">
+    <div class="modal-content">
+      <h3>❌ Các câu trả lời sai</h3>
+      <div id="wrongListContainer"></div>
+      <button class="btn-ghost" style="width:100%; margin-top:20px" onclick="document.getElementById('wrongModal').classList.remove('active')">Đóng</button>
+    </div>
+  </div>
+
+  <script>
+    // --- CẤU HÌNH BẢO MẬT ADMIN ---
+    const SECRET_SALT = "DuyBaoDepZaiVCL"; 
+    const ADMIN_PASS = "tdn.xabcd0";
+
+    // --- KIỂM TRA QUYỀN TRUY CẬP (TOTP) ---
+    window.addEventListener('DOMContentLoaded', () => {
+      if (localStorage.getItem('session_v2') === 'true') {
+        document.getElementById('loginZone').style.display = 'none';
+      }
+    });
+
+    function verifyKey(inputKey) {
+      const now = new Date();
+      for (let i = -1; i <= 1; i++) {
+        const checkTime = new Date(now.getTime() + i * 60000);
+        // Đưa Phút và Giờ lên đầu để chuỗi thay đổi mạnh mỗi phút
+        const timeStr = checkTime.getMinutes() + "" + checkTime.getHours() + "" + checkTime.getDate() + "" + checkTime.getMonth() + "" + checkTime.getFullYear();
+        
+        // Bỏ .substring(0, 8) để lấy toàn bộ chuỗi Base64
+        const validKey = btoa(timeStr + SECRET_SALT).toUpperCase();
+        
+        if (inputKey === validKey) return true;
+      }
+      return false;
+    }
+
+    document.getElementById('verifyKeyBtn').onclick = () => {
+      const key = document.getElementById('accessKeyInput').value.trim().toUpperCase();
+      if (verifyKey(key)) {
+        localStorage.setItem('session_v2', 'true');
+        alert("Xác thực thành công! Máy đã được cấp quyền truy cập vĩnh viễn.");
+        document.getElementById('loginZone').style.display = 'none';
+      } else {
+        alert("Key không hợp lệ hoặc đã hết hạn (Key chỉ sống được ~1 phút)!");
+      }
+    };
+
+    document.getElementById('accessKeyInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') document.getElementById('verifyKeyBtn').click();
+    });
+
+    function generateKey() {
+      const now = new Date();
+      // Đưa Phút và Giờ lên đầu tương tự như trên
+      const timeStr = now.getMinutes() + "" + now.getHours() + "" + now.getDate() + "" + now.getMonth() + "" + now.getFullYear();
+      
+      // Bỏ .substring(0, 8) để lấy toàn bộ chuỗi Base64
+      return btoa(timeStr + SECRET_SALT).toUpperCase();
+    }
+
+    document.getElementById('copyAdminKeyBtn').onclick = async () => {
+      const key = document.getElementById('generatedKey').textContent;
+      await navigator.clipboard.writeText(key);
+      alert("Đã copy key: " + key + "\n\nHãy gửi mã này cho bạn bè ngay.");
+      document.getElementById('adminZone').classList.add('hidden');
+    };
+
+    // --- CẤU HÌNH GITHUB API ---
+    const GITHUB_USER = 'BaoBao-creator'; 
+    const GITHUB_REPO = 'ABCD';
+    const EXAM_PATH = 'de'; 
+
+    let state = { examFile: null, jsonData: null, questions: [], currentIndex: 0, userAnswers: [], pdfSourceUrl: null, pdfObjectUrl: null };
+
+    // --- LƯU / KHÔI PHỤC TIẾN TRÌNH ---
+    const PROGRESS_PREFIX = 'sigma_exam_progress_v1:';
+
+    function getProgressKey() {
+      const examName = state.examFile?.name || DOM.nameExam.textContent || 'unknown_exam';
+      const jsonSeed = state.jsonData ? JSON.stringify(state.jsonData) : '';
+      let hash = 0;
+      const str = examName + '|' + jsonSeed;
+
+      for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
+      }
+
+      return PROGRESS_PREFIX + examName.replace(/[^\w.-]+/g, '_') + ':' + (hash >>> 0).toString(16);
+    }
+
+    function clearSavedProgress() {
+      try { localStorage.removeItem(getProgressKey()); } catch (_) {}
+    }
+
+    function saveProgress() {
+      if (!state.questions.length) return;
+      const payload = {
+        status: 'doing',
+        currentIndex: state.currentIndex,
+        userAnswers: state.userAnswers,
+        savedAt: Date.now()
+      };
+      try {
+        localStorage.setItem(getProgressKey(), JSON.stringify(payload));
+      } catch (err) {
+        console.warn('Không lưu được tiến trình:', err);
+      }
+    }
+
+    function restoreProgress() {
+      try {
+        const raw = localStorage.getItem(getProgressKey());
+        if (!raw) return false;
+
+        const saved = JSON.parse(raw);
+        if (saved.status === 'finished') {
+          localStorage.removeItem(getProgressKey());
+          return false;
+        }
+
+        if (!Array.isArray(saved.userAnswers)) return false;
+        state.userAnswers = saved.userAnswers;
+        state.currentIndex = Math.max(0, Math.min(saved.currentIndex || 0, state.questions.length - 1));
+        return true;
+      } catch (err) {
+        console.warn('Không khôi phục được tiến trình:', err);
+        return false;
+      }
+    }
+
+    const DOM = {
+      examInp: document.getElementById('examInput'), 
+      jsonInp: document.getElementById('jsonInput'),
+      lblExam: document.getElementById('labelExam'), 
+      lblJson: document.getElementById('labelJson'),
+      nameExam: document.getElementById('nameExam'), 
+      nameJson: document.getElementById('nameJson'),
+      startBtn: document.getElementById('startBtn'), 
+      host: document.getElementById('content-host'),
+      setupZone: document.getElementById('setupZone'), 
+      quizZone: document.getElementById('quizZone'), 
+      resultZone: document.getElementById('resultZone'),
+      // Thêm 2 dòng này:
+      repoList: document.getElementById('repoExamList'),
+      selectedName: document.getElementById('selectedExamName'),
+      loadRepoBtn: document.getElementById('loadRepoBtn'),
+      answerPopup: document.getElementById('answerPopup'),
+      answerPopupBackdrop: document.getElementById('answerPopupBackdrop'),
+      answerPopupBody: document.getElementById('answerPopupBody'),
+      answerPopupContent: document.getElementById('answerPopupContent'),
+      answerPopupSubtitle: document.getElementById('answerPopupSubtitle'),
+      toggleAnswerPopupBtn: document.getElementById('toggleAnswerPopupBtn'),
+      answerPopupZoomLabel: document.getElementById('answerPopupZoomLabel'),
+      answerPopupHeader: document.getElementById('answerPopupHeader')
+    };
+
+
+    if (DOM.toggleAnswerPopupBtn) {
+      DOM.toggleAnswerPopupBtn.onclick = toggleAnswerPopup;
+    }
+    if (DOM.answerPopupBackdrop) {
+      DOM.answerPopupBackdrop.onclick = () => closeAnswerPopup();
+    }
+
+    // --- PDF VIEWER NÂNG CẤP ---
+    let currentPdfDoc = null;
+    let currentPdfUrl = "";
+    let currentPdfRenderToken = 0;
+    let currentPdfScale = 1;
+    let currentPdfPageIndex = 1;
+    let currentPdfDrawEnabled = true;
+    let currentPdfStrokeHistory = [];
+    let currentPdfCurrentStroke = null;
+    let currentPdfInkCanvases = new Map();
+    let currentPdfPageWraps = new Map();
+    let currentPdfScrollContainer = null;
+    let answerPopupZoom = 1;
+    let answerPopupMinimized = false;
+
+    function showPdfPlaceholder(message = "Nội dung đề thi (.pdf) sẽ hiển thị tại đây") {
+      currentPdfDrawEnabled = true;
+      currentPdfStrokeHistory = [];
+      currentPdfCurrentStroke = null;
+      currentPdfInkCanvases = new Map();
+      currentPdfPageWraps = new Map();
+      currentPdfPageIndex = 1;
+      currentPdfScrollContainer = null;
+      DOM.host.innerHTML = `
+        <div class="placeholder" id="emptyMsg">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+          ${message}
+        </div>`;
+      document.getElementById('pdfToolbar').classList.add('hidden');
+    }
+
+    function disposeObjectPdfUrl() {
+      if (state.pdfObjectUrl) {
+        URL.revokeObjectURL(state.pdfObjectUrl);
+        state.pdfObjectUrl = null;
+      }
+    }
+
+    function getFitScale(page, container) {
+      const viewport = page.getViewport({ scale: 1 });
+      const availableWidth = Math.max(280, container.clientWidth - 8);
+      return Math.max(0.65, Math.min(2.5, availableWidth / viewport.width));
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function updateAnswerPopupZoomLabel() {
+      if (DOM.answerPopupZoomLabel) {
+        DOM.answerPopupZoomLabel.textContent = `${Math.round(answerPopupZoom * 100)}%`;
+      }
+      if (DOM.answerPopupContent) {
+        DOM.answerPopupContent.style.transformOrigin = 'top center';
+        DOM.answerPopupContent.style.transform = `scale(${answerPopupZoom})`;
+        DOM.answerPopupContent.style.width = `${100 / answerPopupZoom}%`;
+      }
+    }
+
+    function openAnswerPopup() {
+      if (!DOM.answerPopup || !DOM.answerPopupBackdrop) return;
+      DOM.answerPopup.classList.remove('hidden');
+      DOM.answerPopupBackdrop.classList.remove('hidden');
+      DOM.answerPopup.classList.remove('minimized');
+      answerPopupMinimized = false;
+      if (DOM.toggleAnswerPopupBtn) DOM.toggleAnswerPopupBtn.textContent = '🙈 Ẩn khung đáp án';
+      updateAnswerPopupZoomLabel();
+    }
+
+    function closeAnswerPopup() {
+      if (!DOM.answerPopup || !DOM.answerPopupBackdrop) return;
+      DOM.answerPopup.classList.add('hidden');
+      DOM.answerPopupBackdrop.classList.add('hidden');
+      if (DOM.toggleAnswerPopupBtn) DOM.toggleAnswerPopupBtn.textContent = '🪟 Mở khung đáp án';
+    }
+
+    function toggleAnswerPopup() {
+      if (!DOM.answerPopup) return;
+      if (DOM.answerPopup.classList.contains('hidden')) openAnswerPopup();
+      else closeAnswerPopup();
+    }
+
+    function setAnswerPopupZoom(nextZoom) {
+      answerPopupZoom = clamp(nextZoom, 0.7, 1.8);
+      updateAnswerPopupZoomLabel();
+    }
+
+    function toggleAnswerPopupMinimized() {
+      if (!DOM.answerPopup) return;
+      answerPopupMinimized = !answerPopupMinimized;
+      DOM.answerPopup.classList.toggle('minimized', answerPopupMinimized);
+      if (DOM.answerPopupMinimizedBtn) {}
+      if (answerPopupMinimized) {
+        if (DOM.answerPopupBackdrop) DOM.answerPopupBackdrop.classList.add('active');
+      }
+    }
+
+
+    function updatePdfToolbar() {
+      const toolbar = document.getElementById('pdfToolbar');
+      const zoomLabel = document.getElementById('pdfZoomLabel');
+      const pageLabel = document.getElementById('pdfPageLabel');
+      const undoBtn = document.getElementById('pdfUndoBtn');
+      const drawBtn = document.getElementById('pdfDrawToggleBtn');
+      const prevBtn = document.getElementById('pdfPrevPageBtn');
+      const nextBtn = document.getElementById('pdfNextPageBtn');
+
+      if (toolbar) toolbar.classList.remove('hidden');
+      if (zoomLabel) zoomLabel.textContent = `${Math.round(currentPdfScale * 100)}%`;
+      if (pageLabel && currentPdfDoc) pageLabel.textContent = `${currentPdfPageIndex} / ${currentPdfDoc.numPages}`;
+      if (undoBtn) undoBtn.disabled = !currentPdfDoc || currentPdfStrokeHistory.length === 0;
+      if (drawBtn) {
+        drawBtn.textContent = currentPdfDrawEnabled ? '✏️ Vẽ: Bật' : '✏️ Vẽ: Tắt';
+        drawBtn.classList.toggle('toggle-on', currentPdfDrawEnabled);
+        drawBtn.classList.toggle('toggle-off', !currentPdfDrawEnabled);
+      }
+      if (prevBtn) prevBtn.disabled = !currentPdfDoc || currentPdfPageIndex <= 1;
+      if (nextBtn) nextBtn.disabled = !currentPdfDoc || !currentPdfDoc.numPages || currentPdfPageIndex >= currentPdfDoc.numPages;
+    }
+
+    function drawStroke(ctx, stroke, canvasEl) {
+      if (!stroke || !stroke.points || !stroke.points.length) return;
+      const w = canvasEl.clientWidth || 1;
+      const h = canvasEl.clientHeight || 1;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = stroke.color || '#f97316';
+      ctx.lineWidth = clamp((stroke.widthRatio || 0.004) * w, 1.5, 18);
+      ctx.beginPath();
+      stroke.points.forEach((pt, idx) => {
+        const x = pt.x * w;
+        const y = pt.y * h;
+        if (idx === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+    }
+
+    function redrawPdfInk(pageNum) {
+      const canvas = currentPdfInkCanvases.get(pageNum);
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      const cssW = canvas.clientWidth || canvas.width / dpr;
+      const cssH = canvas.clientHeight || canvas.height / dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, cssW, cssH);
+      currentPdfStrokeHistory.filter(s => s.pageNum === pageNum).forEach(stroke => drawStroke(ctx, stroke, canvas));
+      if (currentPdfCurrentStroke && currentPdfCurrentStroke.pageNum === pageNum) {
+        drawStroke(ctx, currentPdfCurrentStroke, canvas);
+      }
+    }
+
+    function redrawAllPdfInk() {
+      for (const pageNum of currentPdfInkCanvases.keys()) redrawPdfInk(pageNum);
+    }
+
+    function getPdfPoint(canvas, event) {
+      const rect = canvas.getBoundingClientRect();
+      let clientX = event.clientX;
+      let clientY = event.clientY;
+
+      if ((clientX === undefined || clientY === undefined) && event.touches && event.touches.length) {
+        clientX = event.touches[0].clientX;
+        clientY = event.touches[0].clientY;
+      }
+      if ((clientX === undefined || clientY === undefined) && event.changedTouches && event.changedTouches.length) {
+        clientX = event.changedTouches[0].clientX;
+        clientY = event.changedTouches[0].clientY;
+      }
+
+      return {
+        x: clamp((clientX - rect.left) / rect.width, 0, 1),
+        y: clamp((clientY - rect.top) / rect.height, 0, 1)
+      };
+    }
+
+    function attachInkEvents(canvas, pageNum) {
+      let activeInputKind = null;
+
+      const beginStroke = (event, kind = 'pointer') => {
+        if (!currentPdfDrawEnabled) return;
+        event.preventDefault();
+        activeInputKind = kind;
+        const pointerId = event.pointerId ?? kind;
+        if (kind === 'pointer' && canvas.setPointerCapture && event.pointerId !== undefined) {
+          try { canvas.setPointerCapture(event.pointerId); } catch (_) {}
+        }
+        currentPdfCurrentStroke = {
+          pageNum,
+          color: '#f97316',
+          widthRatio: 3 / Math.max(1, canvas.clientWidth || 1),
+          points: [getPdfPoint(canvas, event)],
+          pointerId
+        };
+        redrawPdfInk(pageNum);
+      };
+
+      const extendStroke = (event) => {
+        if (!currentPdfDrawEnabled || !currentPdfCurrentStroke || currentPdfCurrentStroke.pageNum !== pageNum) return;
+        if (activeInputKind === 'touch') {
+          // touch input keeps ownership of the stroke
+        } else if (currentPdfCurrentStroke.pointerId !== undefined && event.pointerId !== undefined && currentPdfCurrentStroke.pointerId !== event.pointerId) {
+          return;
+        }
+        event.preventDefault();
+        currentPdfCurrentStroke.points.push(getPdfPoint(canvas, event));
+        redrawPdfInk(pageNum);
+      };
+
+      const finishStroke = (event) => {
+        if (!currentPdfCurrentStroke || currentPdfCurrentStroke.pageNum !== pageNum) return;
+        if (activeInputKind === 'touch') {
+          // end the touch stroke regardless of pointerId
+        } else if (event && currentPdfCurrentStroke.pointerId !== undefined && event.pointerId !== undefined && currentPdfCurrentStroke.pointerId !== event.pointerId) {
+          return;
+        }
+        if (currentPdfCurrentStroke.points.length < 2) {
+          currentPdfCurrentStroke = null;
+          activeInputKind = null;
+          redrawPdfInk(pageNum);
+          updatePdfToolbar();
+          return;
+        }
+        currentPdfStrokeHistory.push(currentPdfCurrentStroke);
+        currentPdfCurrentStroke = null;
+        activeInputKind = null;
+        redrawAllPdfInk();
+        updatePdfToolbar();
+      };
+
+      // Pointer events (desktop + modern mobile)
+      canvas.onpointerdown = (event) => {
+        if (event.pointerType === 'touch' || activeInputKind === 'touch') return;
+        beginStroke(event, 'pointer');
+      };
+      canvas.onpointermove = (event) => {
+        if (activeInputKind === 'touch') return;
+        extendStroke(event);
+      };
+      canvas.onpointerup = (event) => {
+        if (activeInputKind === 'touch') return;
+        finishStroke(event);
+      };
+      canvas.onpointercancel = (event) => {
+        if (activeInputKind === 'touch') return;
+        finishStroke(event);
+      };
+      canvas.onlostpointercapture = (event) => {
+        if (activeInputKind === 'touch') return;
+        finishStroke(event);
+      };
+
+      // Touch support for phones/tablets
+      canvas.addEventListener('touchstart', (event) => {
+        if (!currentPdfDrawEnabled) return;
+        if (!event.touches || event.touches.length !== 1) return;
+        beginStroke(event, 'touch');
+      }, { passive: false });
+      canvas.addEventListener('touchmove', (event) => {
+        if (activeInputKind !== 'touch') return;
+        extendStroke(event);
+      }, { passive: false });
+      const endTouch = (event) => {
+        if (activeInputKind !== 'touch') return;
+        finishStroke(event);
+      };
+      canvas.addEventListener('touchend', endTouch, { passive: false });
+      canvas.addEventListener('touchcancel', endTouch, { passive: false });
+    }
+
+    function undoLastPdfStroke() {
+      if (!currentPdfStrokeHistory.length) return;
+      currentPdfStrokeHistory.pop();
+      currentPdfCurrentStroke = null;
+      redrawAllPdfInk();
+      updatePdfToolbar();
+    }
+
+    function setPdfDrawMode(enabled) {
+      currentPdfDrawEnabled = !!enabled;
+      const toolbar = document.getElementById('pdfToolbar');
+      if (toolbar) toolbar.classList.toggle('pdf-draw-off', !currentPdfDrawEnabled);
+      updatePdfToolbar();
+    }
+
+    function togglePdfDrawMode() {
+      setPdfDrawMode(!currentPdfDrawEnabled);
+    }
+
+    function scrollToPdfPage(pageNum, smooth = true) {
+      const pageWrap = currentPdfPageWraps.get(pageNum);
+      const scroll = currentPdfScrollContainer;
+      if (!pageWrap || !scroll) return;
+      currentPdfPageIndex = clamp(pageNum, 1, currentPdfDoc ? currentPdfDoc.numPages : pageNum);
+      pageWrap.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
+      updatePdfToolbar();
+    }
+
+    function bindPdfScrollTracking() {
+      if (!currentPdfScrollContainer) return;
+      const scroll = currentPdfScrollContainer;
+      let ticking = false;
+
+      const update = () => {
+        ticking = false;
+        if (!currentPdfDoc) return;
+        const scrollRect = scroll.getBoundingClientRect();
+        const scrollCenter = scrollRect.top + scrollRect.height * 0.35;
+        let bestPage = currentPdfPageIndex || 1;
+        let bestDist = Infinity;
+
+        currentPdfPageWraps.forEach((wrap, pageNum) => {
+          const rect = wrap.getBoundingClientRect();
+          const center = rect.top + rect.height * 0.35;
+          const dist = Math.abs(center - scrollCenter);
+          if (dist < bestDist) {
+            bestDist = dist;
+            bestPage = pageNum;
+          }
+        });
+
+        currentPdfPageIndex = bestPage;
+        updatePdfToolbar();
+      };
+
+      scroll.onscroll = () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(update);
+      };
+    }
+
+    async function renderPdfPages(pdf, scale) {
+      const token = ++currentPdfRenderToken;
+      const scroll = document.createElement('div');
+      scroll.className = 'pdf-scroll';
+      scroll.innerHTML = '<div class="placeholder">Đang tải PDF...</div>';
+      DOM.host.innerHTML = '';
+      DOM.host.appendChild(scroll);
+      currentPdfScrollContainer = scroll;
+      currentPdfPageWraps = new Map();
+
+      const toolbar = document.getElementById('pdfToolbar');
+      const zoomLabel = document.getElementById('pdfZoomLabel');
+      const zoomOutBtn = document.getElementById('pdfZoomOutBtn');
+      const zoomInBtn = document.getElementById('pdfZoomInBtn');
+      const fitBtn = document.getElementById('pdfFitBtn');
+      const undoBtn = document.getElementById('pdfUndoBtn');
+      const resetZoomBtn = document.getElementById('pdfResetZoomBtn');
+      const drawToggleBtn = document.getElementById('pdfDrawToggleBtn');
+      const prevPageBtn = document.getElementById('pdfPrevPageBtn');
+      const nextPageBtn = document.getElementById('pdfNextPageBtn');
+
+      toolbar.classList.remove('hidden');
+      zoomLabel.textContent = `${Math.round(scale * 100)}%`;
+      updatePdfToolbar();
+
+      const clampScale = (value) => Math.max(0.65, Math.min(3, value));
+      const rerender = async (nextScale) => {
+        currentPdfScale = clampScale(nextScale);
+        if (token !== currentPdfRenderToken) return;
+        zoomLabel.textContent = `${Math.round(currentPdfScale * 100)}%`;
+        await drawPdf(pdf, scroll, currentPdfScale, token);
+        updatePdfToolbar();
+      };
+
+      zoomOutBtn.onclick = () => rerender(currentPdfScale - 0.15);
+      zoomInBtn.onclick = () => rerender(currentPdfScale + 0.15);
+      resetZoomBtn.onclick = () => rerender(1);
+      fitBtn.onclick = async () => {
+        const firstPage = await pdf.getPage(1);
+        rerender(getFitScale(firstPage, scroll));
+      };
+      if (undoBtn) undoBtn.onclick = () => undoLastPdfStroke();
+      if (drawToggleBtn) drawToggleBtn.onclick = () => togglePdfDrawMode();
+      if (prevPageBtn) prevPageBtn.onclick = () => scrollToPdfPage(currentPdfPageIndex - 1);
+      if (nextPageBtn) nextPageBtn.onclick = () => scrollToPdfPage(currentPdfPageIndex + 1);
+
+      await drawPdf(pdf, scroll, scale, token);
+      bindPdfScrollTracking();
+      updatePdfToolbar();
+    }
+
+    async function drawPdf(pdf, container, scale, token) {
+      container.innerHTML = '';
+      currentPdfInkCanvases = new Map();
+      currentPdfPageWraps = new Map();
+      const dpr = window.devicePixelRatio || 1;
+
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        if (token !== currentPdfRenderToken) return;
+        const page = await pdf.getPage(pageNum);
+        const baseViewport = page.getViewport({ scale });
+
+        const pageWrap = document.createElement('div');
+        pageWrap.className = 'pdf-page';
+        pageWrap.dataset.pageNum = String(pageNum);
+
+        const innerWrap = document.createElement('div');
+        innerWrap.style.position = 'relative';
+
+        const canvas = document.createElement('canvas');
+        canvas.className = 'pdf-canvas';
+        canvas.width = Math.floor(baseViewport.width * dpr);
+        canvas.height = Math.floor(baseViewport.height * dpr);
+        canvas.style.width = `${Math.floor(baseViewport.width)}px`;
+        canvas.style.height = `${Math.floor(baseViewport.height)}px`;
+
+        const ink = document.createElement('canvas');
+        ink.className = 'pdf-ink-canvas';
+        ink.width = canvas.width;
+        ink.height = canvas.height;
+        ink.style.width = canvas.style.width;
+        ink.style.height = canvas.style.height;
+
+        innerWrap.appendChild(canvas);
+        innerWrap.appendChild(ink);
+        pageWrap.appendChild(innerWrap);
+        container.appendChild(pageWrap);
+
+        currentPdfPageWraps.set(pageNum, pageWrap);
+        currentPdfInkCanvases.set(pageNum, ink);
+
+        const context = canvas.getContext('2d', { alpha: false });
+        await page.render({
+          canvasContext: context,
+          viewport: page.getViewport({ scale: scale * dpr })
+        }).promise;
+
+        redrawPdfInk(pageNum);
+        attachInkEvents(ink, pageNum);
+      }
+
+      currentPdfPageIndex = clamp(currentPdfPageIndex, 1, pdf.numPages || 1);
+      updatePdfToolbar();
+      requestAnimationFrame(() => scrollToPdfPage(currentPdfPageIndex, false));
+    }
+
+    async function openPdfSource(url, { title = '', showLoading = true } = {}) {
+      try {
+        currentPdfUrl = url;
+        const toolbar = document.getElementById('pdfToolbar');
+        toolbar.classList.remove('hidden');
+        DOM.host.innerHTML = '<div class="pdf-scroll"><div class="placeholder">Đang tải PDF...</div></div>';
+        const scroll = DOM.host.querySelector('.pdf-scroll');
+        currentPdfScrollContainer = scroll;
+
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        const loadingTask = pdfjsLib.getDocument({ url });
+        const pdf = await loadingTask.promise;
+        if (currentPdfUrl !== url) return;
+
+        currentPdfDoc = pdf;
+        currentPdfDrawEnabled = true;
+        currentPdfCurrentStroke = null;
+        currentPdfStrokeHistory = [];
+        currentPdfInkCanvases = new Map();
+        currentPdfPageWraps = new Map();
+        currentPdfPageIndex = 1;
+        const firstPage = await pdf.getPage(1);
+        const fitScale = getFitScale(firstPage, scroll);
+        currentPdfScale = fitScale;
+        setPdfDrawMode(true);
+        await renderPdfPages(pdf, fitScale);
+      } catch (err) {
+        console.error('PDF load error:', err);
+        showPdfPlaceholder('Không mở được PDF. Hãy kiểm tra file hoặc kết nối mạng.');
+      }
+    }
+    // --- TẢI DANH SÁCH ĐỀ TỪ GITHUB ---
+// Biến lưu trữ giá trị thư mục đang chọn
+    let selectedRepoValue = "";
+    
+    // 1. Tải danh sách đề từ Github
+    async function loadExamsFromGithub() {
+      try {
+        const response = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${EXAM_PATH}`);
+        if (!response.ok) throw new Error();
+        
+        const data = await response.json();
+        const folders = data.filter(item => item.type === 'dir');
+    
+        DOM.repoList.innerHTML = ''; 
+        
+        folders.forEach(folder => {
+          const item = document.createElement('div');
+          item.className = 'dropdown-item';
+          item.textContent = folder.name.replaceAll('_', ' ');
+          item.dataset.value = folder.path;
+          
+          item.onclick = (e) => {
+            e.stopPropagation();
+            selectedRepoValue = folder.path;
+            DOM.selectedName.textContent = item.textContent;
+            
+            // Cập nhật UI
+            document.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            DOM.repoList.classList.add('hidden');
+            DOM.loadRepoBtn.disabled = false;
+          };
+          DOM.repoList.appendChild(item);
+        });
+      } catch (error) {
+        DOM.repoList.innerHTML = '<div class="dropdown-item">Không thể tải danh sách!</div>';
+      }
+    }
+    
+    // 2. Điều khiển đóng/mở Dropdown
+    DOM.selectedName.onclick = (e) => {
+      e.stopPropagation();
+      DOM.repoList.classList.toggle('hidden');
+    };
+    
+    document.addEventListener('click', () => {
+      DOM.repoList.classList.add('hidden');
+    });
+    
+    // 3. Xử lý khi nhấn nút "Tải đề đã chọn"
+    DOM.loadRepoBtn.onclick = async () => {
+      if (!selectedRepoValue) return;
+      
+      const baseUrl = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${selectedRepoValue}/`;
+    
+      try {
+        DOM.loadRepoBtn.textContent = 'Đang tải dữ liệu...';
+        DOM.loadRepoBtn.disabled = true;
+    
+        // Tải JSON
+        const resJson = await fetch(baseUrl + 'answers.json', { cache: "no-cache" });
+        if (!resJson.ok) throw new Error();
+        state.jsonData = await resJson.json();
+        
+        DOM.nameJson.textContent = "Hệ thống: answers.json";
+        DOM.lblJson.classList.add('active');
+    
+        // Hiển thị PDF
+        const pdfUrl = baseUrl + 'exam.pdf';
+        state.examFile = { name: "exam.pdf" }; 
+        DOM.nameExam.textContent = "Hệ thống: exam.pdf";
+        DOM.lblExam.classList.add('active');
+        
+        if (state.pdfObjectUrl) URL.revokeObjectURL(state.pdfObjectUrl);
+        await openPdfSource(pdfUrl, { title: 'exam.pdf' });
+    
+        checkReady();
+        alert("Đã tải xong đề: " + DOM.selectedName.textContent);
+      } catch (e) {
+        alert("Lỗi! Thư mục này thiếu file exam.pdf hoặc answers.json");
+      } finally {
+        DOM.loadRepoBtn.textContent = '⬇️ Tải đề đã chọn';
+        DOM.loadRepoBtn.disabled = false;
+      }
+    };
+    
+    // Gọi hàm khởi tạo
+    showPdfPlaceholder();
+    loadExamsFromGithub();
+    // --- LOGIC XỬ LÝ FILE GỐC ---
+    async function handlePdf(file) {
+      if (!file || file.type !== "application/pdf") { alert("Vui lòng chọn file PDF hợp lệ!"); return; }
+      disposeObjectPdfUrl();
+      state.examFile = file;
+      DOM.nameExam.textContent = file.name;
+      DOM.lblExam.classList.add('active');
+      state.pdfObjectUrl = URL.createObjectURL(file);
+      await openPdfSource(state.pdfObjectUrl, { title: file.name });
+      checkReady();
+    }
+
+    function handleJson(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          
+          // Kiểm tra chế độ Admin qua Trigger Key
+          if (data.admin_access === ADMIN_PASS) {
+            document.getElementById('generatedKey').textContent = generateKey();
+            document.getElementById('adminZone').classList.remove('hidden');
+            DOM.jsonInp.value = ""; // Xóa input để không lưu nhầm
+            return;
+          }
+
+          // Dòng chạy bình thường cho bài thi
+          state.jsonData = data;
+          DOM.nameJson.textContent = file.name;
+          DOM.lblJson.classList.add('active');
+          checkReady();
+        } catch { alert("File JSON không hợp lệ! Vui lòng kiểm tra lại cấu trúc."); }
+      };
+      reader.readAsText(file);
+    }
+
+    DOM.examInp.addEventListener('change', e => handlePdf(e.target.files[0]));
+    DOM.jsonInp.addEventListener('change', e => handleJson(e.target.files[0]));
+
+    ['dragover', 'dragleave', 'drop'].forEach(evt => {
+      DOM.lblExam.addEventListener(evt, e => e.preventDefault());
+      DOM.lblJson.addEventListener(evt, e => e.preventDefault());
+    });
+    DOM.lblExam.addEventListener('dragover', () => DOM.lblExam.classList.add('dragover'));
+    DOM.lblExam.addEventListener('dragleave', () => DOM.lblExam.classList.remove('dragover'));
+    DOM.lblExam.addEventListener('drop', e => { DOM.lblExam.classList.remove('dragover'); handlePdf(e.dataTransfer.files[0]); });
+
+    DOM.lblJson.addEventListener('dragover', () => DOM.lblJson.classList.add('dragover'));
+    DOM.lblJson.addEventListener('dragleave', () => DOM.lblJson.classList.remove('dragover'));
+    DOM.lblJson.addEventListener('drop', e => { DOM.lblJson.classList.remove('dragover'); handleJson(e.dataTransfer.files[0]); });
+
+    function checkReady() { DOM.startBtn.disabled = !(state.examFile && state.jsonData); }
+
+    function parseQuestions() {
+      state.questions = [];
+      const data = state.jsonData;
+      if (data.abcd) Object.keys(data.abcd).sort((a,b)=>a-b).forEach(k => state.questions.push({ type: 'abcd', id: k, correct: data.abcd[k], sectionName: 'Phần I (Trắc nghiệm)' }));
+      if (data.ds) Object.keys(data.ds).sort((a,b)=>a-b).forEach(k => state.questions.push({ type: 'ds', id: k, correct: data.ds[k], sectionName: 'Phần II (Đúng/Sai)' }));
+      if (data.tln) Object.keys(data.tln).sort((a,b)=>a-b).forEach(k => state.questions.push({ type: 'tln', id: k, correct: data.tln[k], sectionName: 'Phần III (Trả lời ngắn)' }));
+      
+      state.userAnswers = new Array(state.questions.length).fill(null);
+      state.currentIndex = 0;
+    }
+
+    DOM.startBtn.onclick = () => {
+      parseQuestions();
+      if(state.questions.length === 0) { alert("Không tìm thấy câu hỏi nào trong file JSON!"); return; }
+      const restored = restoreProgress();
+      DOM.setupZone.classList.add('hidden'); DOM.quizZone.classList.remove('hidden');
+      openAnswerPopup();
+      renderQuestion();
+      if (restored) alert("Đã khôi phục tiến trình làm bài trước đó.");
+    };
+
+    function renderQuestion() {
+      const q = state.questions[state.currentIndex];
+      if (DOM.answerPopupSubtitle) {
+        DOM.answerPopupSubtitle.textContent = `${q.sectionName} • Câu ${q.id} • ${q.type === 'abcd' ? 'Trắc nghiệm' : q.type === 'ds' ? 'Đúng/Sai' : 'Trả lời ngắn'}`;
+      }
+      if (DOM.answerPopup && DOM.answerPopup.classList.contains('hidden') === false) {
+        openAnswerPopup();
+      }
+      const total = state.questions.length;
+      const current = state.currentIndex + 1;
+      
+      document.getElementById('progressText').textContent = `Câu ${current} / ${total}`;
+      document.getElementById('progressBar').style.width = `${(current / total) * 100}%`;
+      const tagMap = { abcd: 'Trắc nghiệm (1 đáp án)', ds: 'Chọn Đúng/Sai', tln: 'Điền câu trả lời ngắn' };
+      document.getElementById('modeTag').textContent = tagMap[q.type];
+      document.getElementById('qNumber').textContent = `${q.sectionName} - Câu ${q.id}`;
+      
+      const area = document.getElementById('answerArea');
+      area.innerHTML = '';
+      const saved = state.userAnswers[state.currentIndex] || {};
+
+      if (q.type === 'abcd') {
+        const labels = ['A', 'B', 'C', 'D'];
+        let html = '<div class="options">';
+        for(let i=0; i<4; i++) {
+          const isChecked = saved.val === String(i) ? 'checked' : '';
+          html += `<label class="option"><input type="radio" name="abcd" value="${i}" ${isChecked}><span>${labels[i]}</span></label>`;
+        }
+        area.innerHTML = html + '</div>';
+      } 
+      else if (q.type === 'ds') {
+        let html = '<div>';
+        const rows = ['a', 'b', 'c', 'd'];
+        const savedArr = saved.val ? saved.val.split('') : ['','','',''];
+        for(let i=0; i<4; i++) {
+           const ansD = savedArr[i] === 'd' ? 'checked' : ''; const ansS = savedArr[i] === 's' ? 'checked' : '';
+           html += `<div class="ds-row"><b>Ý ${rows[i]}</b><div class="ds-choices"><label><input type="radio" name="ds_${i}" value="d" ${ansD}> Đúng</label><label><input type="radio" name="ds_${i}" value="s" ${ansS}> Sai</label></div></div>`;
+        }
+        area.innerHTML = html + '</div>';
+      } 
+      else if (q.type === 'tln') {
+        area.innerHTML = `<input type="text" id="tlnInput" class="text-answer" placeholder="Nhập đáp án chính xác..." value="${saved.val || ''}">`;
+        setTimeout(() => document.getElementById('tlnInput').focus(), 100);
+      }
+
+      area.oninput = () => {
+        saveAnswer();
+        saveProgress();
+      };
+      area.onchange = () => {
+        saveAnswer();
+        saveProgress();
+      };
+
+      document.getElementById('prevBtn').disabled = (state.currentIndex === 0);
+      document.getElementById('nextBtn').disabled = (state.currentIndex === state.questions.length - 1);
+    }
+
+    function saveAnswer() {
+      const q = state.questions[state.currentIndex];
+      const area = document.getElementById('answerArea');
+      let val = null;
+
+      if (q.type === 'abcd') { const checked = area.querySelector('input:checked'); if (checked) val = checked.value; } 
+      else if (q.type === 'ds') {
+        let res = '';
+        for(let i=0; i<4; i++) { const checked = area.querySelector(`input[name="ds_${i}"]:checked`); res += checked ? checked.value : '-'; }
+        if(res !== '----') val = res;
+      } 
+      else if (q.type === 'tln') { const input = document.getElementById('tlnInput'); if (input && input.value.trim() !== '') val = input.value.trim(); }
+      state.userAnswers[state.currentIndex] = { val };
+    }
+
+    document.getElementById('nextBtn').onclick = () => {
+      saveAnswer();
+      saveProgress();
+      if (state.currentIndex < state.questions.length - 1) { 
+        state.currentIndex++; 
+        renderQuestion(); 
+      } 
+    };
+
+    // Thêm logic cho nút Nộp bài
+    document.getElementById('submitQuizBtn').onclick = () => {
+      saveAnswer(); // Lưu lại đáp án của câu hiện tại đang đứng
+      // Thêm bước xác nhận
+      const confirmSubmit = confirm("Bạn có chắc chắn muốn nộp bài không?");
+      if (confirmSubmit) {
+        clearSavedProgress();
+        finishQuiz();
+      }
+    };
+
+    document.getElementById('prevBtn').onclick = () => {
+      saveAnswer();
+      saveProgress();
+      if (state.currentIndex > 0) { state.currentIndex--; renderQuestion(); }
+    };
+
+    document.addEventListener('keydown', (e) => {
+      if (DOM.quizZone.classList.contains('hidden')) return;
+      const active = document.activeElement;
+      const isTyping = active && active.tagName === 'INPUT' && active.type === 'text';
+
+      if (e.key === 'Enter' && isTyping) { 
+        if (state.currentIndex < state.questions.length - 1) document.getElementById('nextBtn').click(); 
+        return; 
+      }
+      if (isTyping) return;
+      
+      if (e.key === 'ArrowRight') {
+        if (state.currentIndex < state.questions.length - 1) document.getElementById('nextBtn').click();
+      }
+      if (e.key === 'ArrowLeft') {
+        document.getElementById('prevBtn').click();
+      }
+    });
+
+    function finishQuiz() {
+      clearSavedProgress();
+      let correctCount = 0;
+      state.questions.forEach((q, idx) => {
+        const uAns = state.userAnswers[idx]?.val;
+        q.isCorrect = false; q.userAnsStr = uAns;
+        if (!uAns) return;
+        
+        if (q.type === 'abcd') { if (String(uAns) === String(q.correct)) q.isCorrect = true; } 
+        else if (q.type === 'ds') { if (uAns.toLowerCase() === String(q.correct).toLowerCase()) q.isCorrect = true; } 
+        else if (q.type === 'tln') { if (uAns.toLowerCase() === String(q.correct).toLowerCase()) q.isCorrect = true; }
+        if (q.isCorrect) correctCount++;
+      });
+
+      const total = state.questions.length;
+      const wrongCount = total - correctCount;
+      const percent = total > 0 ? Math.round((correctCount / total) * 100) : 0;
+
+      document.getElementById('rTotal').textContent = total;
+      document.getElementById('rPercent').textContent = percent + '%';
+      document.getElementById('rCorrect').textContent = correctCount;
+      document.getElementById('rWrong').textContent = wrongCount;
+
+      closeAnswerPopup();
+      DOM.quizZone.classList.add('hidden'); DOM.resultZone.classList.remove('hidden');
+      buildWrongList();
+    }
+
+    function buildWrongList() {
+      const container = document.getElementById('wrongListContainer');
+      const abcdMap = ['A', 'B', 'C', 'D'];
+      const wrongs = state.questions.filter(q => !q.isCorrect);
+      
+      if (wrongs.length === 0) { container.innerHTML = '<p style="color:var(--accent-success); text-align:center;">Tuyệt vời! Bạn đã đúng 100%.</p>'; return; }
+
+      let html = '';
+      wrongs.forEach(q => {
+         let uTxt = q.userAnsStr || 'Bỏ trống'; let cTxt = q.correct;
+         if (q.type === 'abcd') { uTxt = q.userAnsStr ? abcdMap[parseInt(q.userAnsStr)] : 'Bỏ trống'; cTxt = abcdMap[parseInt(q.correct)]; } 
+         else if (q.type === 'ds') {
+            uTxt = q.userAnsStr ? q.userAnsStr.split('').map(c => c==='d'?'Đúng':(c==='s'?'Sai':'-')).join(', ') : 'Bỏ trống';
+            cTxt = String(q.correct).split('').map(c => c.toLowerCase()==='d'?'Đúng':'Sai').join(', ');
+         }
+         html += `<div class="wrong-item"><div class="q-title">${q.sectionName} - Câu ${q.id}</div><div class="u-ans">Bạn chọn: ${uTxt}</div><div class="c-ans">Đáp án đúng: ${cTxt}</div></div>`;
+      });
+      container.innerHTML = html;
+    }
+
+    document.getElementById('viewWrongBtn').onclick = () => document.getElementById('wrongModal').classList.add('active');
+    document.getElementById('retryBtn').onclick = () => {
+       clearSavedProgress();
+       state.currentIndex = 0; state.userAnswers = new Array(state.questions.length).fill(null);
+       DOM.resultZone.classList.add('hidden'); DOM.quizZone.classList.remove('hidden'); openAnswerPopup(); renderQuestion();
+    };
+    
+    document.getElementById('resetBtn').onclick = () => {
+       clearSavedProgress();
+       disposeObjectPdfUrl();
+       currentPdfDoc = null;
+       currentPdfUrl = "";
+       currentPdfRenderToken++;
+       state = { examFile: null, jsonData: null, questions: [], currentIndex: 0, userAnswers: [], pdfSourceUrl: null, pdfObjectUrl: null };
+       DOM.examInp.value = ''; DOM.jsonInp.value = '';
+       DOM.nameExam.textContent = 'Chưa chọn file'; DOM.nameJson.textContent = 'Định dạng .json';
+       DOM.lblExam.classList.remove('active'); DOM.lblJson.classList.remove('active'); 
+
+       selectedRepoValue = "";
+       DOM.selectedName.textContent = "-- Chọn một đề thi --";
+       DOM.loadRepoBtn.disabled = true;
+
+       DOM.startBtn.disabled = true;
+       DOM.resultZone.classList.add('hidden'); DOM.setupZone.classList.remove('hidden');
+       closeAnswerPopup();
+       showPdfPlaceholder();
+    };
+
+    document.getElementById('usageBtn').onclick = () => document.getElementById('usageModal').classList.add('active');
+    document.getElementById('guideBtn').onclick = () => document.getElementById('guideModal').classList.add('active');
+    window.addEventListener('keydown', (event) => {
+      if (!currentPdfDoc) return;
+      const target = event.target;
+      const typing = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+      if (typing) return;
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+        event.preventDefault();
+        undoLastPdfStroke();
+      }
+    });
+    window.addEventListener('beforeunload', () => {
+      if (DOM.quizZone && !DOM.quizZone.classList.contains('hidden')) {
+        saveAnswer();
+        saveProgress();
+      }
+    });
+
+    document.getElementById('copyPromptBtn').onclick = async () => {
+      const prompt = `Hãy đóng vai một công cụ trích xuất dữ liệu. Trích xuất đáp án thành JSON theo cấu trúc chính xác sau: {"abcd": {"1": 0, "2": 1}, "ds": {"1": "ddss"}, "tln": {"1": "đáp án"}}. Giải thích: Nhóm "abcd" là trắc nghiệm 4 lựa chọn (A=0, B=1, C=2, D=3). Nhóm "ds" là Đúng/Sai (d=Đúng, s=Sai, chuỗi 4 ký tự cho 4 ý a,b,c,d). Nhóm "tln" là trả lời ngắn. Các key ("1", "2"...) là số thứ tự câu trong từng phần. Chỉ xuất duy nhất mã JSON, không giải thích.`;
+      await navigator.clipboard.writeText(prompt);
+      alert("Đã copy Prompt!");
+    };
+  </script>
+</body>
+</html>
