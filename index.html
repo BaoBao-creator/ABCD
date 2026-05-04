@@ -153,6 +153,8 @@
     .wrong-item .c-ans { color: var(--accent-success); font-size: 14px; font-weight: bold; }
 
     input[type="file"] { display: none; }
+    
+    select option { background: #0f172a; color: #fff; }
   </style>
 </head>
 <body>
@@ -160,6 +162,16 @@
   <div class="container">
     <aside class="sidebar">
       <div id="setupZone">
+        <section class="card">
+          <h2>📂 Chọn đề từ hệ thống</h2>
+          <select id="repoExamSelect" class="text-answer" style="padding: 12px; margin-bottom: 12px; cursor: pointer;">
+            <option value="">-- Đang tải danh sách đề... --</option>
+          </select>
+          <button class="btn-primary" id="loadRepoBtn" style="width: 100%" disabled>⬇️ Tải đề đã chọn</button>
+        </section>
+
+        <div style="text-align: center; margin: 10px 0; color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: 0.05em;">— HOẶC TỰ TẢI FILE LÊN —</div>
+
         <section class="card">
           <h2>📚 Tải Đề Thi (PDF)</h2>
           <label class="upload-zone" id="labelExam">
@@ -290,6 +302,11 @@
   </div>
 
   <script>
+    // --- CẤU HÌNH GITHUB API ---
+    const GITHUB_USER = 'BaoBao-creator'; 
+    const GITHUB_REPO = 'ABCD';
+    const EXAM_PATH = 'de'; 
+
     let state = { examFile: null, jsonData: null, questions: [], currentIndex: 0, userAnswers: [] };
 
     const DOM = {
@@ -297,9 +314,72 @@
       lblExam: document.getElementById('labelExam'), lblJson: document.getElementById('labelJson'),
       nameExam: document.getElementById('nameExam'), nameJson: document.getElementById('nameJson'),
       startBtn: document.getElementById('startBtn'), host: document.getElementById('content-host'),
-      setupZone: document.getElementById('setupZone'), quizZone: document.getElementById('quizZone'), resultZone: document.getElementById('resultZone')
+      setupZone: document.getElementById('setupZone'), quizZone: document.getElementById('quizZone'), resultZone: document.getElementById('resultZone'),
+      repoSelect: document.getElementById('repoExamSelect'), loadRepoBtn: document.getElementById('loadRepoBtn')
     };
 
+    // --- TẢI DANH SÁCH ĐỀ TỪ GITHUB ---
+    async function loadExamsFromGithub() {
+      try {
+        const response = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${EXAM_PATH}`);
+        if (!response.ok) throw new Error('Không tìm thấy thư mục hoặc bị giới hạn API');
+        
+        const data = await response.json();
+        const folders = data.filter(item => item.type === 'dir');
+
+        DOM.repoSelect.innerHTML = '<option value="">-- Chọn một đề thi --</option>';
+        folders.forEach(folder => {
+          const opt = document.createElement('option');
+          opt.value = folder.path;
+          // Thay thế dấu gạch dưới bằng khoảng trắng cho hiển thị đẹp hơn
+          opt.textContent = folder.name.replaceAll('_', ' '); 
+          DOM.repoSelect.appendChild(opt);
+        });
+      } catch (error) {
+        DOM.repoSelect.innerHTML = '<option value="">Chưa có dữ liệu đề trên hệ thống!</option>';
+        console.log("Lưu ý: Bạn cần tạo thư mục 'de' trên Github. Lỗi:", error);
+      }
+    }
+    
+    // Khởi chạy khi load trang
+    loadExamsFromGithub();
+
+    DOM.repoSelect.onchange = () => { DOM.loadRepoBtn.disabled = !DOM.repoSelect.value; };
+
+    DOM.loadRepoBtn.onclick = async () => {
+      const folderPath = DOM.repoSelect.value;
+      const baseUrl = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${folderPath}/`;
+
+      try {
+        DOM.loadRepoBtn.textContent = 'Đang tải dữ liệu...';
+        DOM.loadRepoBtn.disabled = true;
+
+        const resJson = await fetch(baseUrl + 'answers.json', { cache: "no-cache" });
+        if (!resJson.ok) throw new Error('Lỗi fetch answers.json');
+        state.jsonData = await resJson.json();
+        
+        DOM.nameJson.textContent = "Hệ thống: answers.json";
+        DOM.lblJson.classList.add('active');
+
+        const pdfUrl = baseUrl + 'exam.pdf';
+        state.examFile = { name: "exam.pdf" }; // Đánh dấu state
+        DOM.nameExam.textContent = "Hệ thống: exam.pdf";
+        DOM.lblExam.classList.add('active');
+        
+        DOM.host.innerHTML = `<iframe src="${pdfUrl}#toolbar=0" class="pdf-viewer"></iframe>`;
+
+        checkReady();
+        alert("Đã tải xong đề: " + DOM.repoSelect.options[DOM.repoSelect.selectedIndex].text);
+      } catch (e) {
+        alert("Lỗi! Đảm bảo trong thư mục đề trên GitHub có đủ 2 file: exam.pdf và answers.json (Lưu ý: Nếu vừa up file lên Github, cần đợi 1-2 phút).");
+        console.error(e);
+      } finally {
+        DOM.loadRepoBtn.textContent = '⬇️ Tải đề đã chọn';
+        DOM.loadRepoBtn.disabled = false;
+      }
+    };
+
+    // --- LOGIC XỬ LÝ FILE GỐC ---
     function handlePdf(file) {
       if (!file || file.type !== "application/pdf") { alert("Vui lòng chọn file PDF hợp lệ!"); return; }
       state.examFile = file;
@@ -489,11 +569,14 @@
        state.currentIndex = 0; state.userAnswers = new Array(state.questions.length).fill(null);
        DOM.resultZone.classList.add('hidden'); DOM.quizZone.classList.remove('hidden'); renderQuestion();
     };
+    
     document.getElementById('resetBtn').onclick = () => {
        state = { examFile: null, jsonData: null, questions: [], currentIndex: 0, userAnswers: [] };
        DOM.examInp.value = ''; DOM.jsonInp.value = '';
        DOM.nameExam.textContent = 'Chưa chọn file'; DOM.nameJson.textContent = 'Định dạng .json';
-       DOM.lblExam.classList.remove('active'); DOM.lblJson.classList.remove('active'); DOM.startBtn.disabled = true;
+       DOM.lblExam.classList.remove('active'); DOM.lblJson.classList.remove('active'); 
+       DOM.repoSelect.value = ''; DOM.loadRepoBtn.disabled = true;
+       DOM.startBtn.disabled = true;
        DOM.resultZone.classList.add('hidden'); DOM.setupZone.classList.remove('hidden');
        DOM.host.innerHTML = '<div class="placeholder"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>Nội dung đề thi (.pdf) sẽ hiển thị tại đây</div>';
     };
