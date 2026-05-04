@@ -563,7 +563,7 @@
 
     // --- KIỂM TRA QUYỀN TRUY CẬP (TOTP) ---
     window.addEventListener('DOMContentLoaded', () => {
-      if (localStorage.getItem('isAuthorized') === 'true') {
+      if (localStorage.getItem('session_v2') === 'true') {
         document.getElementById('loginZone').style.display = 'none';
       }
     });
@@ -572,8 +572,12 @@
       const now = new Date();
       for (let i = -1; i <= 1; i++) {
         const checkTime = new Date(now.getTime() + i * 60000);
-        const timeStr = checkTime.getFullYear() + "" + checkTime.getMonth() + "" + checkTime.getDate() + "" + checkTime.getHours() + "" + checkTime.getMinutes();
-        const validKey = btoa(timeStr + SECRET_SALT).substring(0, 8).toUpperCase();
+        // Đưa Phút và Giờ lên đầu để chuỗi thay đổi mạnh mỗi phút
+        const timeStr = checkTime.getMinutes() + "" + checkTime.getHours() + "" + checkTime.getDate() + "" + checkTime.getMonth() + "" + checkTime.getFullYear();
+        
+        // Bỏ .substring(0, 8) để lấy toàn bộ chuỗi Base64
+        const validKey = btoa(timeStr + SECRET_SALT).toUpperCase();
+        
         if (inputKey === validKey) return true;
       }
       return false;
@@ -582,7 +586,7 @@
     document.getElementById('verifyKeyBtn').onclick = () => {
       const key = document.getElementById('accessKeyInput').value.trim().toUpperCase();
       if (verifyKey(key)) {
-        localStorage.setItem('isAuthorized', 'true');
+        localStorage.setItem('session_v2', 'true');
         alert("Xác thực thành công! Máy đã được cấp quyền truy cập vĩnh viễn.");
         document.getElementById('loginZone').style.display = 'none';
       } else {
@@ -596,8 +600,11 @@
 
     function generateKey() {
       const now = new Date();
-      const timeStr = now.getFullYear() + "" + now.getMonth() + "" + now.getDate() + "" + now.getHours() + "" + now.getMinutes();
-      return btoa(timeStr + SECRET_SALT).substring(0, 8).toUpperCase();
+      // Đưa Phút và Giờ lên đầu tương tự như trên
+      const timeStr = now.getMinutes() + "" + now.getHours() + "" + now.getDate() + "" + now.getMonth() + "" + now.getFullYear();
+      
+      // Bỏ .substring(0, 8) để lấy toàn bộ chuỗi Base64
+      return btoa(timeStr + SECRET_SALT).toUpperCase();
     }
 
     document.getElementById('copyAdminKeyBtn').onclick = async () => {
