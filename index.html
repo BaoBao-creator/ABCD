@@ -624,7 +624,7 @@
         const timeStr = checkTime.getMinutes() + "" + checkTime.getHours() + "" + checkTime.getDate() + "" + checkTime.getMonth() + "" + checkTime.getFullYear();
         
         // Bỏ .substring(0, 8) để lấy toàn bộ chuỗi Base64
-        const validKey = btoa(timeStr + SECRET_SALT).toUpperCase();
+        const validKey = btoa(timeStr + SECRET_SALT).toUpperCase().substring(0, 8);
         
         if (inputKey === validKey) return true;
       }
@@ -652,7 +652,7 @@
       const timeStr = now.getMinutes() + "" + now.getHours() + "" + now.getDate() + "" + now.getMonth() + "" + now.getFullYear();
       
       // Bỏ .substring(0, 8) để lấy toàn bộ chuỗi Base64
-      return btoa(timeStr + SECRET_SALT).toUpperCase();
+      return btoa(timeStr + SECRET_SALT).toUpperCase().substring(0, 8);
     }
 
     document.getElementById('copyAdminKeyBtn').onclick = async () => {
